@@ -21,7 +21,7 @@ class FacebookImporter
       .then @finish
       .fail (error) ->
         error.stack = new Error().stack
-        console.error error
+        console.error "24", error
         response.error error
 
   getFbFriends: =>
@@ -97,6 +97,7 @@ class FacebookImporter
 
               promise.resolve()
             .fail (error) =>
+              console.error "100", error
               promise.reject error
         else if results.length is 1
           # role exists, just need to update friends list
@@ -108,6 +109,7 @@ class FacebookImporter
             .then (friends) =>
               relation.remove friends
             .fail (error) =>
+              console.error "112", error
               promise.reject error
           # add current friends
           if @peggFriends.length > 0
@@ -118,6 +120,7 @@ class FacebookImporter
           promise.reject "Something went wrong. There should only be one role called #{fbFriendsRoleName}, but we have #{results.length} of them."
 
       .fail (error) =>
+        console.error "123", error
         promise.reject error
     promise
 
