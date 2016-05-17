@@ -26,7 +26,7 @@ class FacebookImporter
     query.equalTo 'objectId', @user.id
     query.find({ useMasterKey: true })
       .then (@user) =>
-        console.log "1111111111111111111111111111", @user, "22222222222222222222222222222222"
+        console.log "33333333333333333333333333333333333", @user, "22222222222222222222222222222222"
         token = @user.authData.facebook.access_token
         url = "https://graph.facebook.com/me/friends?fields=id&access_token=" + token
         @_getFbFriends url, []
