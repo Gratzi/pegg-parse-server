@@ -2,10 +2,16 @@ _ = require 'underscore'
 facebookImporter = require './facebookImporter'
 mailChimp = require './mailchimp'
 {makeObject, failHandler} = require './utils'
+FirebaseTokenGenerator = require 'firebase-token-generator'
 
 ######### CLOUD FUNCTIONS #########
 
 Parse.Cloud.define "importFriends", facebookImporter.start
+
+Parse.Cloud.define "getFirebaseToken", (request, response) ->
+  FIREBASE_SECRET = process.env.FIREBASE_SECRET or throw new Error "cannot have an empty FIREBASE_SECRET"
+  tokenGenerator = new FirebaseTokenGenerator FIREBASE_SECRET
+  token = tokenGenerator.createToken {uid: request.user.id}, {expires: 2272147200}
 
 ######### AFTER SAVE, DELETE, ETC #########
 
