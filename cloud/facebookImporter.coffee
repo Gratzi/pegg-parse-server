@@ -19,7 +19,10 @@ class FacebookImporter
       .then @updateBackwardPermissions
       .then @sendFirebaseNotifications
       .then @finish
-      .fail (error) -> response.error error
+      .fail (error) ->
+        error.stack = new Error().stack
+        console.error error
+        response.error error
 
   getFbFriends: =>
     query = new Parse.Query Parse.User
