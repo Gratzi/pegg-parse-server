@@ -22,11 +22,14 @@ class FacebookImporter
       .fail (error) -> response.error error
 
   getFbFriends: =>
+    console.log "11111111111111111111111111111", @user, "22222222222222222222222222222222"
+    console.log @user.get 'authData'
     query = new Parse.Query Parse.User
     query.equalTo 'objectId', @user.id
-    query.find({ useMasterKey: true })
+    query.first({ useMasterKey: true })
       .then (@user) =>
         console.log "33333333333333333333333333333333333", @user, "22222222222222222222222222222222"
+        console.log @user.get 'authData'
         token = @user.authData.facebook.access_token
         url = "https://graph.facebook.com/me/friends?fields=id&access_token=" + token
         @_getFbFriends url, []
