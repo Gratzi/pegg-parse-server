@@ -22,7 +22,8 @@ class FacebookImporter
       .fail (error) -> response.error error
 
   getFbFriends: =>
-    token = @user.attributes.authData.facebook.access_token
+    console.log "1111111111111111111111111111", @user, "22222222222222222222222222222222"
+    token = @user.authData.facebook.access_token
     url = "https://graph.facebook.com/me/friends?fields=id&access_token=" + token
     @_getFbFriends url, []
 
