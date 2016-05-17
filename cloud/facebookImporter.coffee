@@ -7,12 +7,11 @@ class FacebookImporter
     console.log "new user? :: #{JSON.stringify request.params}"
     @isNewUser = request.params.newUser
     @response = response
-    @user = Parse.User.current()
+    @user = request.user
 
     # XXX this shouldn't be necessary if we call functions with useMasterKey: true
     # It's a bug: https://developers.facebook.com/bugs/306759706140811/
     # It's fixed in the latest JS SDK version
-    Parse.Cloud.useMasterKey()
     @getFbFriends()
       .then @getPeggUsersFromFbFriends
       .then @updateUserFriends
@@ -40,7 +39,7 @@ class FacebookImporter
     @friendsArray = _.map @fbFriends, (friend) => friend.id
     query = new Parse.Query Parse.User
     query.containedIn "facebook_id", @friendsArray
-    query.find()
+    query.find({ useMasterKey: true })
       .then (res) =>
         @peggFriends = res
 
@@ -53,10 +52,10 @@ class FacebookImporter
     privatesQuery = new Parse.Query 'UserPrivates'
     console.log 'SAVING USER PRIVATES: ' + @user.id
     privatesQuery.equalTo 'user', @user
-    privatesQuery.first()
+    privatesQuery.first({ useMasterKey: true })
       .then (res) =>
         res.set 'friends', fbIds: @friendsArray
-        res.save()
+        res.save({ useMasterKey: true })
 
   updateForwardPermissions: =>
     # TODO: refactor this function, it is a MONSTOR
@@ -66,27 +65,27 @@ class FacebookImporter
     query = new Parse.Query Parse.Role
     fbFriendsRoleName = "#{@user.id}_FacebookFriends"
     query.equalTo "name", fbFriendsRoleName
-    query.find()
+    query.find({ useMasterKey: true })
       .then (results) =>
         if results.length is 0
           # create a role that lists user's friends from Facebook
           fbFriendsRole = new Parse.Role fbFriendsRoleName, new Parse.ACL()
           if @peggFriends.length > 0
             fbFriendsRole.getUsers().add @peggFriends
-          fbFriendsRole.save()
+          fbFriendsRole.save({ useMasterKey: true })
             .then =>
               # create a role that can see user's cards
               parentRoleName = "#{@user.id}_Friends"
               parentACL = new Parse.ACL()
               parentRole = new Parse.Role parentRoleName, parentACL
               parentRole.getRoles().add fbFriendsRole
-              parentRole.save()
+              parentRole.save({ useMasterKey: true })
 
               # add that role to the user record
               currUserAcl = new Parse.ACL @user
               currUserAcl.setRoleReadAccess "#{@user.id}_Friends", true
               @user.set 'ACL', currUserAcl
-              @user.save()
+              @user.save({ useMasterKey: true })
 
               promise.resolve()
             .fail (error) =>
@@ -97,7 +96,7 @@ class FacebookImporter
           relation = fbFriendsRole.getUsers()
           # dump old friends
           query = relation.query()
-          query.find()
+          query.find({ useMasterKey: true })
             .then (friends) =>
               relation.remove friends
             .fail (error) =>
@@ -105,7 +104,7 @@ class FacebookImporter
           # add current friends
           if @peggFriends.length > 0
             relation.add @peggFriends
-          fbFriendsRole.save()
+          fbFriendsRole.save({ useMasterKey: true })
           promise.resolve()
         else
           promise.reject "Something went wrong. There should only be one role called #{fbFriendsRoleName}, but we have #{results.length} of them."
@@ -123,14 +122,14 @@ class FacebookImporter
 
     query = new Parse.Query Parse.Role
     query.containedIn 'name', friendRoles
-    query.find()
+    query.find({ useMasterKey: true })
       .then (results) =>
         for fbFriendsRole in results
           relation = fbFriendsRole.getUsers()
           friend = new Parse.Object 'User'
           friend.set 'id', @user.id
           relation.add friend
-          fbFriendsRole.save()
+          fbFriendsRole.save({ useMasterKey: true })
 
   finish: =>
     message = "Updated #{@user.attributes.first_name}'s friends from Facebook (Pegg user id #{@user.id})"
