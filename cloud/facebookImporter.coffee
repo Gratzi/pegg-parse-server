@@ -51,7 +51,7 @@ class FacebookImporter
   sendFirebaseNotifications: =>
     if @isNewUser
       peggFriendIds = _.map @peggFriends, (friend) -> friend.id
-      firebase.saveNewUser @user.id, peggFriendIds, @user.createdAt
+      firebase.saveNewUser @user.id, peggFriendIds, @user.get 'createdAt'
 
   updateUserFriends: =>
     privatesQuery = new Parse.Query 'UserPrivates'
@@ -137,7 +137,7 @@ class FacebookImporter
           fbFriendsRole.save({ useMasterKey: true })
 
   finish: =>
-    message = "Updated #{@user.attributes.first_name}'s friends from Facebook (Pegg user id #{@user.id})"
+    message = "Updated #{@user.get 'first_name'}'s friends from Facebook (Pegg user id #{@user.id})"
     @response.success message
 
 module.exports = new FacebookImporter
