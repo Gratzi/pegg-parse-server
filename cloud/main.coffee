@@ -12,7 +12,7 @@ Parse.Cloud.define "getFirebaseToken", (request, response) ->
   FIREBASE_SECRET = process.env.FIREBASE_SECRET or throw new Error "cannot have an empty FIREBASE_SECRET"
   tokenGenerator = new FirebaseTokenGenerator FIREBASE_SECRET
   token = tokenGenerator.createToken {uid: request.user.id}, {expires: 2272147200}
-  response.success token: token
+  response.success token
 
 ######### AFTER SAVE, DELETE, ETC #########
 
