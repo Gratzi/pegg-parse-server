@@ -1,4 +1,5 @@
 _ = require 'underscore'
+sha1 = require 'sha1'
 facebookImporter = require './facebookImporter'
 mailChimp = require './mailchimp'
 {makeObject, failHandler} = require './utils'
@@ -57,12 +58,18 @@ Parse.Cloud.afterSave 'Flag', (request) ->
 
 Parse.Cloud.afterSave 'UserPrivates', (request) ->
 # can't use afterSave Parse.User because on new user creation two saves happen, the first without any user details
-  user = request.object
-  if !user.existed() # if new object
+  userPrivates = request.object
+  if !userPrivates.existed() # if new object
     email = request.object.get 'email'
     firstName = request.object.get 'firstName'
     lastName = request.object.get 'lastName'
-    console.log JSON.stringify {email, firstName, lastName}
+
+    console.log "updating username: #{username}"
+    user = request.object.get 'user'
+    username = sha1(email)
+    user.save { username }, { useMasterKey: true }
+
+    console.log "subscribing to MailChimp:", JSON.stringify {email, firstName, lastName}
     mailChimp.subscribe {email, firstName, lastName}
 
 ######### HELPER #########
