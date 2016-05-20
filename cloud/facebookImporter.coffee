@@ -63,7 +63,7 @@ class FacebookImporter
     privatesQuery.first({ useMasterKey: true })
       .then (res) =>
         res.set 'friends', fbIds: @friendsArray
-        res.save({ useMasterKey: true })
+        res.save(null, { useMasterKey: true })
 
   updateForwardPermissions: =>
     # TODO: refactor this function, it is a MONSTOR
@@ -80,20 +80,20 @@ class FacebookImporter
           fbFriendsRole = new Parse.Role fbFriendsRoleName, new Parse.ACL()
           if @peggFriends.length > 0
             fbFriendsRole.getUsers().add @peggFriends
-          fbFriendsRole.save({ useMasterKey: true })
+          fbFriendsRole.save(null, { useMasterKey: true })
             .then =>
               # create a role that can see user's cards
               parentRoleName = "#{@user.id}_Friends"
               parentACL = new Parse.ACL()
               parentRole = new Parse.Role parentRoleName, parentACL
               parentRole.getRoles().add fbFriendsRole
-              parentRole.save({ useMasterKey: true })
+              parentRole.save(null, { useMasterKey: true })
 
               # add that role to the user record
               currUserAcl = new Parse.ACL @user
               currUserAcl.setRoleReadAccess "#{@user.id}_Friends", true
               @user.set 'ACL', currUserAcl
-              @user.save({ useMasterKey: true })
+              @user.save(null, { useMasterKey: true })
 
               promise.resolve()
             .fail (error) =>
@@ -114,7 +114,7 @@ class FacebookImporter
           # add current friends
           if @peggFriends.length > 0
             relation.add @peggFriends
-          fbFriendsRole.save({ useMasterKey: true })
+          fbFriendsRole.save(null, { useMasterKey: true })
           promise.resolve()
         else
           promise.reject "Something went wrong. There should only be one role called #{fbFriendsRoleName}, but we have #{results.length} of them."
@@ -140,7 +140,7 @@ class FacebookImporter
           friend = new Parse.Object 'User'
           friend.set 'id', @user.id
           relation.add friend
-          fbFriendsRole.save({ useMasterKey: true })
+          fbFriendsRole.save(null, { useMasterKey: true })
 
   finish: =>
     message = "Updated #{@user.get 'first_name'}'s friends from Facebook (Pegg user id #{@user.id})"
