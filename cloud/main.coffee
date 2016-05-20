@@ -59,13 +59,8 @@ Parse.Cloud.afterSave 'Flag', (request) ->
 Parse.Cloud.afterSave 'UserPrivates', (request) ->
 # can't use afterSave Parse.User because on new user creation two saves happen, the first without any user details
   userPrivates = request.object
-  email = userPrivates.get 'email'
-  if email?
-    user = userPrivates.get 'user'
-    username = sha1(email)
-    console.log "updating username for user #{user.id}: #{username}"
-    user.save { username }, { useMasterKey: true }
   if !userPrivates.existed() # if new object
+    email = userPrivates.get 'email'
     firstName = userPrivates.get 'firstName'
     lastName = userPrivates.get 'lastName'
     console.log "subscribing to MailChimp:", JSON.stringify {email, firstName, lastName}
