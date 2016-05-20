@@ -61,9 +61,9 @@ Parse.Cloud.afterSave 'UserPrivates', (request) ->
   userPrivates = request.object
   email = userPrivates.get 'email'
   if email?
-    console.log "updating username: #{username}"
     user = userPrivates.get 'user'
     username = sha1(email)
+    console.log "updating username: #{username}"
     user.save { username }, { useMasterKey: true }
   if !userPrivates.existed() # if new object
     firstName = userPrivates.get 'firstName'
