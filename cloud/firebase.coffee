@@ -1,16 +1,11 @@
-FIREBASE_URL = 'https://pegg-staging.firebaseio.com/'
-PEGG_FIREBASE_URL = 'https://pegg-firebase-staging.herokuapp.com'
-FIREBASE_SECRET = null
+PEGG_FIREBASE_URL = null
 PEGG_SECRET = null
 
 Firebase =
   initialize: =>
-    unless FIREBASE_SECRET?
-      Parse.Config.get().then (config) =>
-        FIREBASE_SECRET = config.get 'firebaseSecret'
-        PEGG_SECRET = config.get 'peggSecret'
-        FIREBASE_URL = config.get 'firebaseUrl'
-        PEGG_FIREBASE_URL = config.get 'peggFirebaseUrl'
+    Parse.Config.get().then (config) =>
+      PEGG_SECRET = config.get 'peggSecret' or fail "peggSecret required!"
+      PEGG_FIREBASE_URL = config.get 'peggFirebaseUrl' or fail "peggFirebaseUrl required!"
 
 #  saveNewCard: (cardId, userId, friends, createdAt) =>
 #    Firebase.initialize().then =>
