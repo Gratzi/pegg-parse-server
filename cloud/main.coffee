@@ -17,7 +17,7 @@ Parse.Cloud.define "getFirebaseToken", (request, response) ->
 
 ######### AFTER SAVE, DELETE, ETC #########
 
-Parse.Cloud.afterSave Parse.User, (request) ->
+Parse.Cloud.afterSave '_User', (request) ->
   user = request.object
   facebookId = user.get 'facebook_id'
   if !user.existed() and !facebookId?
