@@ -19,7 +19,7 @@ Parse.Cloud.define "getFirebaseToken", (request, response) ->
 
 Parse.Cloud.afterSave '_User', (request) ->
   user = request.object
-  user.fetch({ useMasterKey })
+  user.fetch({ useMasterKey: true })
     .then (user) =>
       facebookId = user.get 'facebook_id'
       firstName = user.get 'firstName'
