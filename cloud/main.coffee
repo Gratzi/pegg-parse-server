@@ -19,11 +19,13 @@ Parse.Cloud.define "getFirebaseToken", (request, response) ->
 
 Parse.Cloud.afterSave '_User', (request) ->
   user = request.object
-  facebookId = user.get 'facebook_id'
-  firstName = user.get 'firstName'
-  console.log "XXXXXXXXXXXXXX", firstName, user.existed(), facebookId
-  if !user.existed() and !facebookId?
-    createUserFriendsRole user
+  user.fetch()
+    .then (user) =>
+      facebookId = user.get 'facebook_id'
+      firstName = user.get 'firstName'
+      console.log "XXXXXXXXXXXXXX", firstName, user.existed(), facebookId
+      if !user.existed() and !facebookId?
+        createUserFriendsRole user
 
 createUserFriendsRole: (user) ->
   roleName "#{user.id}_Friends"
