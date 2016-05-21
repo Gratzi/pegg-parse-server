@@ -17,6 +17,18 @@ Parse.Cloud.define "getFirebaseToken", (request, response) ->
 
 ######### AFTER SAVE, DELETE, ETC #########
 
+Parse.Cloud.afterSave Parse.User, (request) ->
+  user = request.object
+  facebookId = user.get 'facebook_id'
+  if !user.existed() and !facebookId?
+    createUserFriendsRole user
+
+createUserFriendsRole: (user) ->
+  roleName "#{user.id}_Friends"
+  roleAcl = new Parse.ACL()
+  role = new Parse.Role roleName, roleAcl
+  role.save(null, { useMasterKey: true })
+
 Parse.Cloud.afterSave 'Pegg', (request) ->
   user = request.user
 
