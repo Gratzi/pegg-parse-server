@@ -22,7 +22,7 @@ Parse.Cloud.afterSave '_User', (request) ->
   user.fetch({ useMasterKey: true })
     .then (user) =>
       facebookId = user.get 'facebook_id'
-      firstName = user.get 'firstName'
+      firstName = user.get 'first_name'
       console.log "YYYYYYYYYYYYYY", firstName, user.existed(), facebookId
       if !user.existed() and !facebookId?
         createUserFriendsRole user
