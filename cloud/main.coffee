@@ -21,11 +21,13 @@ Parse.Cloud.afterSave '_User', (request) ->
   console.log "afterSave User", request
   user = request.object
   facebookId = user.get 'facebook_id'
+  console.log "XXXXXXXXXXXXXX", user, facebookId
   if !user.existed() and !facebookId?
     createUserFriendsRole user
 
 createUserFriendsRole: (user) ->
   roleName "#{user.id}_Friends"
+  console.log "creating role", roleName
   roleAcl = new Parse.ACL()
   role = new Parse.Role roleName, roleAcl
   role.save(null, { useMasterKey: true })
