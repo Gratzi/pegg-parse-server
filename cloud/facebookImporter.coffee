@@ -82,20 +82,29 @@ class FacebookImporter
             fbFriendsRole.getUsers().add @peggFriends
           fbFriendsRole.save(null, { useMasterKey: true })
             .then =>
-              # create a role that can see user's cards
+              promise.resolve() # updateBackwardPermissions needs fbFriendsRole to exist, but can continue without the rest of this
               parentRoleName = "#{@user.id}_Friends"
-              parentACL = new Parse.ACL()
-              parentRole = new Parse.Role parentRoleName, parentACL
-              parentRole.getRoles().add fbFriendsRole
-              parentRole.save(null, { useMasterKey: true })
-
-              # add that role to the user record
-              currUserAcl = new Parse.ACL @user
-              currUserAcl.setRoleReadAccess "#{@user.id}_Friends", true
-              @user.set 'ACL', currUserAcl
-              @user.save(null, { useMasterKey: true })
-
-              promise.resolve()
+              query.equalTo "name", parentRoleName
+              query.find({ useMasterKey: true })
+                .then (results) =>
+                  if results.length is 0
+                    # create a role that can see user's cards
+                    parentACL = new Parse.ACL()
+                    parentRole = new Parse.Role parentRoleName, parentACL
+                    parentRole.getRoles().add fbFriendsRole
+                    parentRole.save(null, { useMasterKey: true })
+                      .fail (error) => console.error "100", error
+                    # add that role to the user record
+                    currUserAcl = new Parse.ACL @user
+                    currUserAcl.setRoleReadAccess "#{@user.id}_Friends", true
+                    @user.set 'ACL', currUserAcl
+                    @user.save(null, { useMasterKey: true })
+                      .fail (error) => console.error "100", error
+                  else
+                    parentRole = results[0]
+                    parentRole.getRoles().add fbFriendsRole
+                    parentRole.save(null, { useMasterKey: true })
+                      .fail (error) => console.error "100", error
             .fail (error) =>
               console.error "100", error
               promise.reject error
