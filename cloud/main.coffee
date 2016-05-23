@@ -25,7 +25,7 @@ Parse.Cloud.define "addFriend", (request, response) ->
   query.equalTo "name", friendRoleName
   query.first({ useMasterKey: true })
     .then (friendRole) =>
-      if friendRole.length >= 1
+      if friendRole?
         relation = friendRole.getUsers()
         user = new Parse.Object Parse.User
         user.set 'id', userId
@@ -35,6 +35,8 @@ Parse.Cloud.define "addFriend", (request, response) ->
           .fail (error) =>
             console.error "27", error
             response.error error
+      else
+        response.error "friend role missing: #{friendId}_Friends"
     .fail (error) =>
       console.error "37", error
       response.error error
@@ -45,7 +47,7 @@ Parse.Cloud.define "addFriend", (request, response) ->
   query.equalTo "name", userRoleName
   query.first({ useMasterKey: true })
     .then (userRole) =>
-      if userRole.length >= 1
+      if userRole?
         relation = userRole.getUsers()
         friend = new Parse.Object Parse.User
         friend.set 'id', friendId
@@ -55,6 +57,8 @@ Parse.Cloud.define "addFriend", (request, response) ->
           .fail (error) =>
             console.error "56", error
             response.error error
+      else
+        response.error "user role missing: #{userId}_Friends"
     .fail (error) =>
       console.error "59", error
       response.error error
