@@ -15,6 +15,51 @@ Parse.Cloud.define "getFirebaseToken", (request, response) ->
   token = tokenGenerator.createToken {uid: request.user.id}, {expires: 2272147200}
   response.success token
 
+Parse.Cloud.define "addFriend", (request, response) ->
+  userId = request.user.id
+  friendId = request.params.friendId
+
+  # add user to Friend's role
+  friendRoleName = "#{friendId}_Friends"
+  query = new Parse.Query Parse.Role
+  query.equalTo "name", friendRoleName
+  query.first({ useMasterKey: true })
+    .then (friendRole) =>
+      if friendRole.length >= 1
+        relation = friendRole.getUsers()
+        user = new Parse.Object Parse.User
+        user.set 'id', userId
+        relation.add user
+        friendRole.save(null, { useMasterKey: true })
+          .then => response.success()
+          .fail (error) =>
+            console.error "27", error
+            response.error error
+    .fail (error) =>
+      console.error "37", error
+      response.error error
+
+  # add friend to User's role
+  userRoleName = "#{userId}_Friends"
+  query = new Parse.Query Parse.Role
+  query.equalTo "name", userRoleName
+  query.first({ useMasterKey: true })
+    .then (userRole) =>
+      if userRole.length >= 1
+        relation = userRole.getUsers()
+        friend = new Parse.Object Parse.User
+        friend.set 'id', friendId
+        relation.add friend
+        userRole.save(null, { useMasterKey: true })
+          .then => response.success()
+          .fail (error) =>
+            console.error "56", error
+            response.error error
+    .fail (error) =>
+      console.error "59", error
+      response.error error
+
+
 ######### AFTER SAVE, DELETE, ETC #########
 
 Parse.Cloud.afterSave '_User', (request) ->
