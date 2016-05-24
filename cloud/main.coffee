@@ -52,9 +52,9 @@ Parse.Cloud.define "addFriend", (request, response) ->
     .then (userRole) =>
       if userRole?
         relation = userRole.getUsers()
-        friend = new Parse.Object Parse.User
-        friend.set 'id', friendId
-        friend.fetch({ useMasterKey: true })
+        query = new Parse.Query Parse.User
+        query.equalTo "objectId", friendId
+        query.first({ useMasterKey: true })
           .then (friend) =>
             relation.add friend
             userRole.save(null, { useMasterKey: true })
