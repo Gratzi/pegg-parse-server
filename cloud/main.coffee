@@ -18,8 +18,17 @@ Parse.Cloud.define "getFirebaseToken", (request, response) ->
 Parse.Cloud.define "addFriend", (request, response) ->
   userId = request.user.id
   friendId = request.params.friendId
-  console.log "1111 USER: #{userId}"
-  console.log "2222 FRIEND: #{friendId}"
+
+  forwardPromise = new Parse.Promise()
+  backwardPromise = new Parse.Promise()
+
+  Parse.Promise.when(
+    forwardPromise
+    backwardPromise
+  ).then =>
+    response.success 'New friend added successfully.'
+  .fail (error) =>
+    response.error error
 
   # add user to Friend's role
   friendRoleName = "#{friendId}_Friends"
@@ -34,15 +43,16 @@ Parse.Cloud.define "addFriend", (request, response) ->
           .then (user) =>
             relation.add user
             friendRole.save(null, { useMasterKey: true })
-              .then => response.success()
+              .then =>
+                forwardPromise.resolve()
               .fail (error) =>
-                console.error "39", error
-                response.error error
+                forwardPromise.reject error
+                console.error "52", error
       else
-        response.error "friend role missing: #{friendId}_Friends"
+        forwardPromise.reject "friend role missing: #{friendId}_Friends"
     .fail (error) =>
-      console.error "37", error
-      response.error error
+      console.error "56", error
+      forwardPromise.reject error
 
   # add friend to User's role
   userRoleName = "#{userId}_Friends"
@@ -58,15 +68,16 @@ Parse.Cloud.define "addFriend", (request, response) ->
           .then (friend) =>
             relation.add friend
             userRole.save(null, { useMasterKey: true })
-              .then => response.success()
-              .fail (error) =>
-                console.error "62", error
-                response.error error
+            .then =>
+              backwardPromise.resolve()
+            .fail (error) =>
+              backwardPromise.reject error
+              console.error "75", error
       else
-        response.error "user role missing: #{userId}_Friends"
+        backwardPromise.reject "user role missing: #{userId}_Friends"
     .fail (error) =>
-      console.error "59", error
-      response.error error
+      console.error "79", error
+      backwardPromise.reject error
 
 
 ######### AFTER SAVE, DELETE, ETC #########
