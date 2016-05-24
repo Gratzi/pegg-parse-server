@@ -36,7 +36,7 @@ Parse.Cloud.define "addFriend", (request, response) ->
             friendRole.save(null, { useMasterKey: true })
               .then => response.success()
               .fail (error) =>
-                console.error "27", error
+                console.error "39", error
                 response.error error
       else
         response.error "friend role missing: #{friendId}_Friends"
@@ -54,12 +54,14 @@ Parse.Cloud.define "addFriend", (request, response) ->
         relation = userRole.getUsers()
         friend = new Parse.Object Parse.User
         friend.set 'id', friendId
-        relation.add friend
-        userRole.save(null, { useMasterKey: true })
-          .then => response.success()
-          .fail (error) =>
-            console.error "56", error
-            response.error error
+        friend.fetch({ useMasterKey: true })
+          .then (friend) =>
+            relation.add friend
+            userRole.save(null, { useMasterKey: true })
+              .then => response.success()
+              .fail (error) =>
+                console.error "62", error
+                response.error error
       else
         response.error "user role missing: #{userId}_Friends"
     .fail (error) =>
