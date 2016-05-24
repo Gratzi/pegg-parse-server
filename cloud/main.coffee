@@ -18,6 +18,8 @@ Parse.Cloud.define "getFirebaseToken", (request, response) ->
 Parse.Cloud.define "addFriend", (request, response) ->
   userId = request.user.id
   friendId = request.params.friendId
+  console.log "1111 USER: #{userId}"
+  console.log "2222 FRIEND: #{friendId}"
 
   # add user to Friend's role
   friendRoleName = "#{friendId}_Friends"
