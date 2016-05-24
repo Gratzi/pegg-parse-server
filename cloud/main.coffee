@@ -32,7 +32,7 @@ Parse.Cloud.define "addFriend", (request, response) ->
         user = new Parse.Object Parse.User
         user.set 'id', userId
         relation.add user
-        friendRole.save(null, { useMasterKey: true })
+        friendRole[0].save(null, { useMasterKey: true })
           .then => response.success()
           .fail (error) =>
             console.error "27", error
@@ -54,7 +54,7 @@ Parse.Cloud.define "addFriend", (request, response) ->
         friend = new Parse.Object Parse.User
         friend.set 'id', friendId
         relation.add friend
-        userRole.save(null, { useMasterKey: true })
+        userRole[0].save(null, { useMasterKey: true })
           .then => response.success()
           .fail (error) =>
             console.error "56", error
