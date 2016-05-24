@@ -25,18 +25,19 @@ Parse.Cloud.define "addFriend", (request, response) ->
   friendRoleName = "#{friendId}_Friends"
   query = new Parse.Query Parse.Role
   query.equalTo "name", friendRoleName
-  query.find({ useMasterKey: true })
+  query.first({ useMasterKey: true })
     .then (friendRole) =>
       if friendRole?
-        relation = friendRole[0].getUsers()
-        user = new Parse.Object Parse.User
-        user.set 'id', userId
-        relation.add user
-        friendRole[0].save(null, { useMasterKey: true })
-          .then => response.success()
-          .fail (error) =>
-            console.error "27", error
-            response.error error
+        relation = friendRole.getUsers()
+        user = request.user
+        user.fetch({ useMasterKey: true })
+          .then (user) =>
+            relation.add user
+            friendRole.save(null, { useMasterKey: true })
+              .then => response.success()
+              .fail (error) =>
+                console.error "27", error
+                response.error error
       else
         response.error "friend role missing: #{friendId}_Friends"
     .fail (error) =>
@@ -47,14 +48,14 @@ Parse.Cloud.define "addFriend", (request, response) ->
   userRoleName = "#{userId}_Friends"
   query = new Parse.Query Parse.Role
   query.equalTo "name", userRoleName
-  query.find({ useMasterKey: true })
+  query.first({ useMasterKey: true })
     .then (userRole) =>
       if userRole?
-        relation = userRole[0].getUsers()
+        relation = userRole.getUsers()
         friend = new Parse.Object Parse.User
         friend.set 'id', friendId
         relation.add friend
-        userRole[0].save(null, { useMasterKey: true })
+        userRole.save(null, { useMasterKey: true })
           .then => response.success()
           .fail (error) =>
             console.error "56", error
@@ -73,7 +74,6 @@ Parse.Cloud.afterSave '_User', (request) ->
   user.fetch({ useMasterKey: true })
     .then (user) =>
       facebookId = user.get 'facebook_id'
-      firstName = user.get 'first_name'
       if !user.existed() and !facebookId?
         roleName = "#{user.id}_Friends"
         console.log "creating role", roleName
