@@ -25,10 +25,10 @@ Parse.Cloud.define "addFriend", (request, response) ->
   friendRoleName = "#{friendId}_Friends"
   query = new Parse.Query Parse.Role
   query.equalTo "name", friendRoleName
-  query.first({ useMasterKey: true })
+  query.find({ useMasterKey: true })
     .then (friendRole) =>
       if friendRole?
-        relation = friendRole.getUsers()
+        relation = friendRole[0].getUsers()
         user = new Parse.Object Parse.User
         user.set 'id', userId
         relation.add user
@@ -47,10 +47,10 @@ Parse.Cloud.define "addFriend", (request, response) ->
   userRoleName = "#{userId}_Friends"
   query = new Parse.Query Parse.Role
   query.equalTo "name", userRoleName
-  query.first({ useMasterKey: true })
+  query.find({ useMasterKey: true })
     .then (userRole) =>
       if userRole?
-        relation = userRole.getUsers()
+        relation = userRole[0].getUsers()
         friend = new Parse.Object Parse.User
         friend.set 'id', friendId
         relation.add friend
