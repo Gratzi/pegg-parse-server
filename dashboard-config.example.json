@@ -1,0 +1,17 @@
+{
+  "apps": [
+    {
+      "serverURL": "http://pegg.herokuapp.com/parse",
+      "appId": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "masterKey": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "appName": "Pegg Production",
+      "production": true
+    },
+    {
+      "serverURL": "http://pegg-staging.herokuapp.com/parse",
+      "appId": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "masterKey": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "appName": "Pegg Staging"
+    }
+  ]
+}
