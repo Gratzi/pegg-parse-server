@@ -123,6 +123,7 @@ class FacebookImporter
           # add current friends
           if @peggFriends.length > 0
             relation.add @peggFriends
+          console.log "updating user role: ", fbFriendsRole, relation
           fbFriendsRole.save(null, { useMasterKey: true })
           promise.resolve()
         else
