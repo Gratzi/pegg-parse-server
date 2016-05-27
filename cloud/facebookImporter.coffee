@@ -147,9 +147,7 @@ class FacebookImporter
       .then (results) =>
         for fbFriendsRole in results
           relation = fbFriendsRole.getUsers()
-          friend = new Parse.Object Parse.User
-          friend.set 'id', @user.id
-          relation.add friend
+          relation.add @user
           console.log "updating friend role: ", fbFriendsRole, relation
           fbFriendsRole.save(null, { useMasterKey: true })
 
