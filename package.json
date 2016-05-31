@@ -11,7 +11,7 @@
   "dependencies": {
     "coffee-script": "^1.10.0",
     "express": "~4.11.x",
-    "firebase-token-generator": "^2.0.0",
+    "firebase": "^3.0.3",
     "kerberos": "~0.0.x",
     "parse": "~1.8.0",
     "parse-server": "~2.2.2",

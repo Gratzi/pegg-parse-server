@@ -3,16 +3,20 @@ sha1 = require 'sha1'
 facebookImporter = require './facebookImporter'
 mailChimp = require './mailchimp'
 {makeObject, failHandler} = require './utils'
-FirebaseTokenGenerator = require 'firebase-token-generator'
+firebase = require 'firebase'
+firebase.initializeApp
+  serviceAccount:
+    projectId: process.env.FIREBASE_PROJECT_ID
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL
+    privateKey: process.env.FIREBASE_PRIVATE_KEY
+  databaseURL: process.env.FIREBASE_DATABASE_URL
 
 ######### CLOUD FUNCTIONS #########
 
 Parse.Cloud.define "importFriends", facebookImporter.start
 
 Parse.Cloud.define "getFirebaseToken", (request, response) ->
-  FIREBASE_SECRET = process.env.FIREBASE_SECRET or throw new Error "cannot have an empty FIREBASE_SECRET"
-  tokenGenerator = new FirebaseTokenGenerator FIREBASE_SECRET
-  token = tokenGenerator.createToken {uid: request.user.id}, {expires: 2272147200}
+  token = firebase.auth().createCustomToken request.user.id
   response.success token
 
 Parse.Cloud.define "addFriend", (request, response) ->
