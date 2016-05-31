@@ -4,12 +4,14 @@ facebookImporter = require './facebookImporter'
 mailChimp = require './mailchimp'
 {makeObject, failHandler} = require './utils'
 firebase = require 'firebase'
-firebase.initializeApp
+config =
   serviceAccount:
-    projectId: "#{process.env.FIREBASE_PROJECT_ID}"
-    clientEmail: "#{process.env.FIREBASE_CLIENT_EMAIL}"
-    privateKey: "#{process.env.FIREBASE_PRIVATE_KEY}"
-  databaseURL: "#{process.env.FIREBASE_DATABASE_URL}"
+    projectId: process.env.FIREBASE_PROJECT_ID
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL
+    privateKey: process.env.FIREBASE_PRIVATE_KEY.replace /\\n/g, '\n'
+  databaseURL: process.env.FIREBASE_DATABASE_URL
+firebase.initializeApp config
+console.log JSON.stringify config
 
 ######### CLOUD FUNCTIONS #########
 
