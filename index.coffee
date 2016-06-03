@@ -31,14 +31,14 @@ app.use '/public', express.static(path.join(__dirname, '/public'))
 mountPath = process.env.PARSE_MOUNT or '/parse'
 app.use mountPath, api
 
-# Parse Server plays nicely with the rest of your web routes
-app.get '/', (req, res) ->
-  res.status(200).send 'I dream of being a website.  Please star the parse-server repo on GitHub!'
-
-# There will be a test page available on the /test path of your server url
-# Remove this before launching your app
-app.get '/test', (req, res) ->
-  res.sendFile path.join(__dirname, '/public/test.html')
+# # Parse Server plays nicely with the rest of your web routes
+# app.get '/', (req, res) ->
+#   res.status(200).send 'I dream of being a website.  Please star the parse-server repo on GitHub!'
+#
+# # There will be a test page available on the /test path of your server url
+# # Remove this before launching your app
+# app.get '/test', (req, res) ->
+#   res.sendFile path.join(__dirname, '/public/test.html')
 
 port = process.env.PORT or 1337
 httpServer = require('http').createServer(app)
