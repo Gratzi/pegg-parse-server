@@ -14,10 +14,10 @@ api = new ParseServer(
   appId: process.env.APP_ID or 'myAppId'
   masterKey: process.env.MASTER_KEY or ''
   serverURL: process.env.SERVER_URL or 'http://localhost:1337/parse'
-  liveQuery: classNames: [
-    'Posts'
-    'Comments'
-  ])
+  # liveQuery: classNames: [
+  #   'Posts'
+  #   'Comments'
+  # ])
 
 # Client-keys like the javascript key or the .NET key are not necessary with parse-server
 # If you wish you require them, you can set them as options in the initialization above:
@@ -31,10 +31,10 @@ app.use '/public', express.static(path.join(__dirname, '/public'))
 mountPath = process.env.PARSE_MOUNT or '/parse'
 app.use mountPath, api
 
-# # Parse Server plays nicely with the rest of your web routes
-# app.get '/', (req, res) ->
-#   res.status(200).send 'I dream of being a website.  Please star the parse-server repo on GitHub!'
-#
+# Parse Server plays nicely with the rest of your web routes
+app.get '/', (req, res) ->
+  res.status(200).send 'Nothing to see here, move along...'
+
 # # There will be a test page available on the /test path of your server url
 # # Remove this before launching your app
 # app.get '/test', (req, res) ->

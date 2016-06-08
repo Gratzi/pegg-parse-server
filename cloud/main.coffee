@@ -27,7 +27,7 @@ Parse.Cloud.define "addFriend", (request, response) ->
     backwardPromise
   ).then =>
     response.success 'New friend added successfully.'
-  .fail (error) =>
+  , (error) =>
     response.error error
 
   # add user to Friend's role
