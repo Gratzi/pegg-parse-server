@@ -1,5 +1,6 @@
 # Example express application adding the parse-server module to expose Parse
 # compatible API routes.
+require('dotenv').config()
 express = require('express')
 ParseServer = require('parse-server').ParseServer
 path = require('path')
