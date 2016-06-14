@@ -14,7 +14,7 @@ fail = (err) ->
 
 FIREBASE_SECRET = process.env.FIREBASE_SECRET or fail "cannot have an empty FIREBASE_SECRET"
 # FIREBASE_UID = process.env.FIREBASE_UID or fail "cannot have an empty FIREBASE_UID"
-FIREBASE_URL = process.env.FIREBASE_URL or fail "cannot have an empty FIREBASE_URL"
+FIREBASE_DATABASE_URL = process.env.FIREBASE_DATABASE_URL or fail "cannot have an empty FIREBASE_DATABASE_URL"
 GCM_API_KEY = process.env.GCM_API_KEY or fail "cannot have an empty GCM_API_KEY"
 APN_CERT_PASSPHRASE = process.env.APN_CERT_PASSPHRASE or fail "cannot have an empty APN_CERT_PASSPHRASE"
 
@@ -68,7 +68,7 @@ sendPush = (registrationIds, notification, progress, resolve, reject) ->
     console.error "Error while sending push: ", error
     reject error
 
-firebase = new Firebase FIREBASE_URL
+firebase = new Firebase FIREBASE_DATABASE_URL
 firebase.authWithCustomToken FIREBASE_SECRET, (error, authData) =>
   if error?
     console.error "Firebase login failed!", error
