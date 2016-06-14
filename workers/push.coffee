@@ -46,10 +46,14 @@ newMessage = (notification, progress, resolve, reject) =>
   try
     receiver = notification.data.receiver
     if receiver?
+      unless registrationIdsChannel.childExists receiver
+        reject "user not registered for push events"
       registrationIdsChannel.child(receiver).once 'value', (registrationsSnapshot) =>
         registrations = registrationsSnapshot.val()
         registrationIds = _.keys registrations
-        unless _.isEmpty registrationIds
+        if _.isEmpty registrationIds
+          reject "no current device registrations"
+        else
           sendPush registrationIds, notification, progress, resolve, reject
   catch error
     console.error "Error while receiving new message: ", error
