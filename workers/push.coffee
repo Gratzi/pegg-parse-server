@@ -46,8 +46,8 @@ newMessage = (notification, progress, resolve, reject) =>
   try
     receiver = notification.data.receiver
     if receiver?
-      unless registrationIdsChannel.hasChild receiver
-        reject "user not registered for push events"
+      # unless registrationIdsChannel.hasChild receiver
+      #   reject "user not registered for push events"
       registrationIdsChannel.child(receiver).once 'value', (registrationsSnapshot) =>
         registrations = registrationsSnapshot.val()
         registrationIds = _.keys registrations
