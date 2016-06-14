@@ -80,4 +80,7 @@ firebase.authWithCustomToken FIREBASE_SECRET, (error, authData) =>
   else
     registrationIdsChannel = firebase.child 'registrationIds'
     pushChannel = firebase.child 'push'
-    queue = new Queue pushChannel, newMessage
+    options =
+      specId: 'spec'
+      numWorkers: 5
+    queue = new Queue pushChannel, options, newMessage
