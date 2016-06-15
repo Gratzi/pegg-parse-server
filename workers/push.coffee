@@ -4,8 +4,8 @@ debug = require 'debug'
 Firebase = require 'firebase'
 Queue = require 'firebase-queue'
 
-log = debug 'app:log'
-errorLog = debug 'app:error'
+log = debug 'push:log'
+errorLog = debug 'push:error'
 fail = (err) ->
   if typeof err is 'string'
     err = new Error err
@@ -41,6 +41,20 @@ push = new PushNotifications pushSettings
 pushChannel = null
 registrationIdsChannel = null
 
+firebase = new Firebase FIREBASE_DATABASE_URL
+firebase.authWithCustomToken FIREBASE_SECRET, (error, authData) =>
+  if error?
+    console.error "Firebase login failed!", error
+    throw error
+  else
+    registrationIdsChannel = firebase.child 'registrationIds'
+    pushChannel = firebase.child 'push'
+    options =
+      specId: 'spec'
+      sanitize: false
+      numWorkers: 5
+    queue = new Queue pushChannel, options, newMessage
+
 newMessage = (notification, progress, resolve, reject) =>
   try
     receiver = notification.data.receiver
@@ -69,17 +83,3 @@ sendPush = (registrationIds, notification, progress, resolve, reject) ->
   catch error
     console.error "Error while sending push: ", error
     reject error
-
-firebase = new Firebase FIREBASE_DATABASE_URL
-firebase.authWithCustomToken FIREBASE_SECRET, (error, authData) =>
-  if error?
-    console.error "Firebase login failed!", error
-    throw error
-  else
-    registrationIdsChannel = firebase.child 'registrationIds'
-    pushChannel = firebase.child 'push'
-    options =
-      specId: 'spec'
-      sanitize: false
-      numWorkers: 5
-    queue = new Queue pushChannel, options, newMessage

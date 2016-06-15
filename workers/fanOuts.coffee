@@ -7,6 +7,11 @@ Promise = require('parse').Promise
 
 log = debug 'fanOuts:log'
 errorLog = debug 'fanOuts:error'
+fail = (err) ->
+  if typeof err is 'string'
+    err = new Error err
+  errorLog err
+  throw err
 
 FIREBASE_SECRET = process.env.FIREBASE_SECRET or fail "cannot have an empty FIREBASE_SECRET"
 FIREBASE_DATABASE_URL = process.env.FIREBASE_DATABASE_URL or fail "cannot have an empty FIREBASE_DATABASE_URL"

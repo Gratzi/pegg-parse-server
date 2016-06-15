@@ -1,10 +1,12 @@
 _ = require 'underscore'
-firebase = require './firebase'
+Firebase = require 'firebase'
 {makeObject, failHandler} = require './utils'
+log = debug 'facebookImporter:log'
+errorLog = debug 'facebookImporter:error'
 
 class FacebookImporter
   start: (request, response) =>
-    console.log "new user? :: #{JSON.stringify request.params}"
+    log "new user? :: #{JSON.stringify request.params}"
     @isNewUser = request.params.newUser
     @response = response
     @user = request.user
@@ -21,7 +23,7 @@ class FacebookImporter
       .then @finish
       .fail (error) ->
         error.stack = new Error().stack
-        console.error "24", error
+        errorLog "24", error
         response.error error
 
   getFbFriends: =>
@@ -52,13 +54,24 @@ class FacebookImporter
         @peggFriends = res
 
   sendFirebaseNotifications: =>
-    if @isNewUser
-      peggFriendIds = _.map @peggFriends, (friend) -> friend.id
-      firebase.saveNewUser @user.id, peggFriendIds, @user.get 'createdAt'
+    firebase = new Firebase FIREBASE_DATABASE_URL
+    firebase.authWithCustomToken FIREBASE_SECRET, (error, authData) =>
+      if error?
+        errorLog "Firebase login failed!", error
+        throw error
+      else
+        log "logged into Firebase"
+        fanOutsChannel = firebase.child 'fanOuts/tasks'
+        # if @isNewUser
+        peggFriendIds = _.map @peggFriends, (friend) -> friend.id
+        fanOutsChannel.push
+          userId: @user.id
+          timestamp: @user.get('createdAt').valueOf()
+          friends: peggFriendIds
 
   updateUserFriends: =>
     privatesQuery = new Parse.Query 'UserPrivates'
-    console.log 'SAVING USER PRIVATES: ' + @user.id
+    log 'SAVING USER PRIVATES: ' + @user.id
     privatesQuery.equalTo 'user', @user
     privatesQuery.first({ useMasterKey: true })
       .then (res) =>
@@ -93,20 +106,20 @@ class FacebookImporter
                     parentRole = new Parse.Role parentRoleName, parentACL
                     parentRole.getRoles().add fbFriendsRole
                     parentRole.save(null, { useMasterKey: true })
-                      .fail (error) => console.error "100", error
+                      .fail (error) => errorLog "100", error
                     # add that role to the user record
                     currUserAcl = new Parse.ACL @user
                     currUserAcl.setRoleReadAccess "#{@user.id}_Friends", true
                     @user.set 'ACL', currUserAcl
                     @user.save(null, { useMasterKey: true })
-                      .fail (error) => console.error "100", error
+                      .fail (error) => errorLog "100", error
                   else
                     parentRole = results[0]
                     parentRole.getRoles().add fbFriendsRole
                     parentRole.save(null, { useMasterKey: true })
-                      .fail (error) => console.error "100", error
+                      .fail (error) => errorLog "100", error
             .fail (error) =>
-              console.error "100", error
+              errorLog "100", error
               promise.reject error
         else if results.length is 1
           # role exists, just need to update friends list
@@ -118,19 +131,19 @@ class FacebookImporter
             .then (friends) =>
               relation.remove friends
             .fail (error) =>
-              console.error "112", error
+              errorLog "112", error
               promise.reject error
           # add current friends
           if @peggFriends.length > 0
             relation.add @peggFriends
-          console.log "updating user role: ", fbFriendsRole, relation
+          log "updating user role: ", fbFriendsRole, relation
           fbFriendsRole.save(null, { useMasterKey: true })
           promise.resolve()
         else
           promise.reject "Something went wrong. There should only be one role called #{fbFriendsRoleName}, but we have #{results.length} of them."
 
       .fail (error) =>
-        console.error "123", error
+        errorLog "123", error
         promise.reject error
     promise
 
@@ -139,7 +152,7 @@ class FacebookImporter
     # ADD user to friends' roles
     for friend in @peggFriends
       friendRoles.push "#{friend.id}_FacebookFriends"
-    console.log friendRoles
+    log friendRoles
 
     query = new Parse.Query Parse.Role
     query.containedIn 'name', friendRoles
@@ -148,7 +161,7 @@ class FacebookImporter
         for fbFriendsRole in results
           relation = fbFriendsRole.getUsers()
           relation.add @user
-          console.log "updating friend role: ", fbFriendsRole, relation
+          log "updating friend role: ", fbFriendsRole, relation
           fbFriendsRole.save(null, { useMasterKey: true })
 
   finish: =>
