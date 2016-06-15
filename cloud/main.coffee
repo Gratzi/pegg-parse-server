@@ -183,7 +183,7 @@ incrementCardCount = (cardId, fieldName) ->
     .then (result) =>
       if result?
         result.increment fieldName, 1
-        result.save({ useMasterKey: true })
+        result.save(null, { useMasterKey: true })
 
 decrementCardCount = (cardId, fieldName) ->
   cardQuery = new Parse.Query 'Card'
@@ -192,7 +192,7 @@ decrementCardCount = (cardId, fieldName) ->
     .then (result) =>
       if result?
         result.increment fieldName, -1
-        result.save({ useMasterKey: true })
+        result.save(null, { useMasterKey: true })
 
 incrementChoiceCount = (choiceId, fieldName) ->
   choiceQuery = new Parse.Query 'Choice'
@@ -201,7 +201,7 @@ incrementChoiceCount = (choiceId, fieldName) ->
     .then (result) =>
       if result?
         result.increment fieldName, 1
-        result.save({ useMasterKey: true })
+        result.save(null, { useMasterKey: true })
 
 decrementChoiceCount = (choiceId, fieldName) ->
   choiceQuery = new Parse.Query 'Choice'
@@ -210,7 +210,7 @@ decrementChoiceCount = (choiceId, fieldName) ->
     .then (result) =>
       if result?
         result.increment fieldName, -1
-        result.save({ useMasterKey: true })
+        result.save(null, { useMasterKey: true })
 
 # updateUserPeggedCards = (user, points) ->
 #   console.log "updateUserPeggedCards: for user -- #{JSON.stringify user} -- points #{points}"
@@ -241,11 +241,11 @@ updatePrefStats = (user, card, pref, guess, points, correctAnswer) ->
             choices[guess.id].peggCount += 1
             choices[guess.id].peggPoints += points
             pref.set 'choices', choices
-            pref.save({ useMasterKey: true })
+            pref.save(null, { useMasterKey: true })
       if correctAnswer
       # UPDATE Pref row(s) with userId in hasPegged array
         pref.addUnique 'hasPegged', user.id
-      pref.save({ useMasterKey: true })
+      pref.save(null, { useMasterKey: true })
         .then => console.log "updatePrefStats: success -- #{JSON.stringify pref}"
         .fail (err) => console.error "updatePrefStats: ERROR -- #{JSON.stringify err}"
 
@@ -263,7 +263,7 @@ updateBestieScore = (user, peggee, points) ->
         score = bestie.get 'score'
         if score >= currLevel * 21 # 21 = average points (7) * 3 cards
           bestie.set 'level', currLevel + 1
-        bestie.save({ useMasterKey: true })
+        bestie.save(null, { useMasterKey: true })
           .then => console.log "updateBestieScore: success -- #{JSON.stringify bestie}"
           .fail (err) => console.error "updateBestieScore: ERROR -- #{JSON.stringify bestie}"
       else
@@ -277,29 +277,32 @@ updateBestieScore = (user, peggee, points) ->
         newBestie.set 'friend', peggee
         newBestie.set 'user', user
         newBestie.set 'ACL', newBestieAcl
-        newBestie.save({ useMasterKey: true })
+        newBestie.save(null, { useMasterKey: true })
           .then => console.log "updateBestieScore: success -- #{JSON.stringify bestie}"
           .fail (err) => console.error "updateBestieScore: ERROR -- #{JSON.stringify bestie}"
 
 
 updateCardHasPreffed = (user, card) ->
   token = user.getSessionToken()
-  # UPDATE card row with userId in hasPreffed array
-  cardQuery = new Parse.Query 'Card'
-  cardQuery.equalTo 'objectId', card.id
-  cardQuery.first({ sessionToken: token })
-    .then (card) ->
+  # # UPDATE card row with userId in hasPreffed array
+  # cardQuery = new Parse.Query 'Card'
+  # cardQuery.equalTo 'objectId', card.id
+  # cardQuery.first({ sessionToken: token })
+  #   .fail ->
+  #     console.log 'hasPreffed failed'
+  #   .then (card) ->
     # TODO: if card is user created, uncomment the ACL code below. Chaincasting!
 #      cardAcl = card.get 'ACL'
 #      if cardAcl isnt undefined
 #        console.log "ACL added to card #{card.id}: #{user.id}_Friends"
 #        cardAcl.setRoleReadAccess "#{user.id}_Friends", true
 #        card.setACL cardAcl
-      card.addUnique 'hasPreffed', user.id
-      card.save({ useMasterKey: true })
+  card.addUnique 'hasPreffed', user.id
+  card.save(null, { useMasterKey: true })
+    .fail (error) ->
+      console.log 'hasPreffed failed', error
+    .then =>
       console.log "hasPreffed saved: #{card.id}"
-    .fail ->
-      console.log 'hasPreffed failed'
 
 # must not be called with useMasterKey enabled
 getCardPrefsByFriends = (user, card) ->
