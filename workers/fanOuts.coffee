@@ -4,8 +4,8 @@ Firebase = require 'firebase'
 Queue = require 'firebase-queue'
 Promise = require('parse').Promise
 
-log = debug 'fanOuts:log'
-errorLog = debug 'fanOuts:error'
+log = debug 'pegg:fanOuts:log'
+errorLog = debug 'pegg:fanOuts:error'
 fail = (err) ->
   if typeof err is 'string'
     err = new Error err

@@ -4,8 +4,8 @@ debug = require 'debug'
 Firebase = require 'firebase'
 Queue = require 'firebase-queue'
 
-log = debug 'push:log'
-errorLog = debug 'push:error'
+log = debug 'pegg:push:log'
+errorLog = debug 'pegg:push:error'
 fail = (err) ->
   if typeof err is 'string'
     err = new Error err
