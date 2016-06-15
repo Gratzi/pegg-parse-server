@@ -4,6 +4,14 @@ Firebase = require 'firebase'
 debug = require 'debug'
 log = debug 'pegg:facebookImporter:log'
 errorLog = debug 'pegg:facebookImporter:error'
+fail = (err) ->
+  if typeof err is 'string'
+    err = new Error err
+  errorLog err
+  throw err
+
+FIREBASE_SECRET = process.env.FIREBASE_SECRET or fail "cannot have an empty FIREBASE_SECRET"
+FIREBASE_DATABASE_URL = process.env.FIREBASE_DATABASE_URL or fail "cannot have an empty FIREBASE_DATABASE_URL"
 
 class FacebookImporter
   start: (request, response) =>
