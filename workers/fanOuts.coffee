@@ -1,5 +1,4 @@
 _ = require 'lodash'
-PushNotifications = require 'node-pushnotifications'
 debug = require 'debug'
 Firebase = require 'firebase'
 Queue = require 'firebase-queue'

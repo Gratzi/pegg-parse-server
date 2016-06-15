@@ -1,6 +1,7 @@
 _ = require 'underscore'
 Firebase = require 'firebase'
 {makeObject, failHandler} = require './utils'
+debug = require 'debug'
 log = debug 'facebookImporter:log'
 errorLog = debug 'facebookImporter:error'
 
