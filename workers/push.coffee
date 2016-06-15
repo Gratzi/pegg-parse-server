@@ -46,13 +46,12 @@ newMessage = (notification, progress, resolve, reject) =>
   try
     receiver = notification.data.receiver
     if receiver?
-      # unless registrationIdsChannel.hasChild receiver
-      #   reject "user not registered for push events"
       registrationIdsChannel.child(receiver).once 'value', (registrationsSnapshot) =>
         registrations = registrationsSnapshot.val()
         registrationIds = _.keys registrations
         if _.isEmpty registrationIds
           reject "no current device registrations"
+          pushChannel.child('tasks').child(notification._id).remove()
         else
           sendPush registrationIds, notification, progress, resolve, reject
   catch error
@@ -82,5 +81,6 @@ firebase.authWithCustomToken FIREBASE_SECRET, (error, authData) =>
     pushChannel = firebase.child 'push'
     options =
       specId: 'spec'
+      sanitize: false
       numWorkers: 5
     queue = new Queue pushChannel, options, newMessage
