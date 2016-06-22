@@ -291,12 +291,14 @@ updateCardHasPreffed = (user, card) ->
   #   .fail ->
   #     console.log 'hasPreffed failed'
   #   .then (card) ->
-    # TODO: if card is user created, uncomment the ACL code below. Chaincasting!
-#      cardAcl = card.get 'ACL'
-#      if cardAcl isnt undefined
-#        console.log "ACL added to card #{card.id}: #{user.id}_Friends"
-#        cardAcl.setRoleReadAccess "#{user.id}_Friends", true
-#        card.setACL cardAcl
+  #     # TODO: if card is user created, uncomment the ACL code below. Chaincasting!
+  #     # cardAcl = card.get 'ACL'
+  #     # if cardAcl isnt undefined
+  #     #   console.log "ACL added to card #{card.id}: #{user.id}_Friends"
+  #     #   cardAcl.setRoleReadAccess "#{user.id}_Friends", true
+  #     #   card.setACL cardAcl
+  if card.get('hasPreffed') is undefined
+    card.set 'hasPreffed', []
   card.addUnique 'hasPreffed', user.id
   card.save(null, { useMasterKey: true })
     .fail (error) ->
