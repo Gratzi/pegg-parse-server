@@ -4,6 +4,8 @@ facebookImporter = require './facebookImporter'
 mailChimp = require './mailchimp'
 {makeObject, failHandler} = require './utils'
 FirebaseTokenGenerator = require 'firebase-token-generator'
+console.log "11111111111111111111111111 " + Parse.Config.get 'peggSecret'
+
 
 ######### CLOUD FUNCTIONS #########
 
