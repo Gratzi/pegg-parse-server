@@ -6,7 +6,7 @@ mailChimp = require './mailchimp'
 FirebaseTokenGenerator = require 'firebase-token-generator'
 Parse.Config.get 'peggSecret'
   .then (result) =>
-    console.log "11111111111111111111111111 " + result
+    console.log "11111111111111111111111111 " + JSON.stringify(result)
 
 ######### CLOUD FUNCTIONS #########
 
