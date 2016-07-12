@@ -4,9 +4,8 @@ facebookImporter = require './facebookImporter'
 mailChimp = require './mailchimp'
 {makeObject, failHandler} = require './utils'
 FirebaseTokenGenerator = require 'firebase-token-generator'
-Parse.Config.get 'peggSecret'
-  .then (result) =>
-    console.log "11111111111111111111111111 " + JSON.stringify(result)
+#Parse.Config.get()
+#  .then (configs) =>
 
 ######### CLOUD FUNCTIONS #########
 
@@ -107,18 +106,15 @@ Parse.Cloud.afterSave 'Pegg', (request) ->
     guess = request.object.get 'guess'
     answer = request.object.get 'answer'
     question = request.object.get 'question'
-    tryCount = request.object.get 'tryCount'
+    failCount = request.object.get 'failCount'
 
-    # Calculate points
-    points = 10 - 3 * tryCount
-
-    # Correct! Save peggerPoints and activity
+    # Correct! Save stats and update Bestie Score
     if guess.id is answer.id
-      updatePrefStats user, card, pref, guess, points, true
-      # updateUserPeggedCards user, points
-      updateBestieScore user, peggee, points
+      updatePrefStats user, card, pref, guess, true
+      # updateUserPeggedCards user, failCount
+      updateBestieScore user, peggee, failCount
     else
-      updatePrefStats user, card, pref, guess, points, false
+      updatePrefStats user, card, pref, guess, false
 
 Parse.Cloud.afterSave 'Pref', (request) ->
   pref = request.object
@@ -163,7 +159,7 @@ Parse.Cloud.afterSave 'UserPrivates', (request) ->
 #    .then (result) =>
 #      result.get('choices') or {}
 
-# returns {<id>: {text: 'hey', peggCount: 0, peggPoints: 0}, <id2>: ...}
+# returns {<id>: {text: 'hey', peggCount: 0}, <id2>: ...}
 # requires useMasterKey
 getChoices = (card) ->
   choiceQuery = new Parse.Query 'Card'
@@ -174,7 +170,6 @@ getChoices = (card) ->
         choices = result.get('choices')
         for own id, choice of choices
           choice.peggCount = 0
-          choice.peggPoints = 0
         return choices
       else
         return null
@@ -226,7 +221,7 @@ decrementChoiceCount = (choiceId, fieldName) ->
 #   user.increment 'pref_count'
 #   user.save()
 
-updatePrefStats = (user, card, pref, guess, points, correctAnswer) ->
+updatePrefStats = (user, card, pref, guess, correctAnswer) ->
   token = user.getSessionToken()
   pref.fetch({sessionToken: token})
     .then (pref) =>
@@ -234,7 +229,6 @@ updatePrefStats = (user, card, pref, guess, points, correctAnswer) ->
       choices = pref.get('choices')
       if choices?
         choices[guess.id].peggCount += 1
-        choices[guess.id].peggPoints += points
         pref.set 'choices', choices
       else
         # Sometimes choices don't get populated on Pref creation, not sure why
@@ -242,7 +236,6 @@ updatePrefStats = (user, card, pref, guess, points, correctAnswer) ->
         getChoices(card)
           .then (choices) =>
             choices[guess.id].peggCount += 1
-            choices[guess.id].peggPoints += points
             pref.set 'choices', choices
             pref.save(null, { useMasterKey: true })
       if correctAnswer
@@ -252,7 +245,7 @@ updatePrefStats = (user, card, pref, guess, points, correctAnswer) ->
         .then => console.log "updatePrefStats: success -- #{JSON.stringify pref}"
         .fail (err) => console.error "updatePrefStats: ERROR -- #{JSON.stringify err}"
 
-updateBestieScore = (user, peggee, points) ->
+updateBestieScore = (user, peggee, failCount) ->
   token = user.getSessionToken()
   bestieQuery = new Parse.Query 'Bestie'
   bestieQuery.equalTo 'friend', peggee
@@ -260,12 +253,8 @@ updateBestieScore = (user, peggee, points) ->
   bestieQuery.first({ sessionToken: token })
     .then (bestie) ->
       if bestie?
-        bestie.increment 'score', points
+        bestie.increment 'failCount', failCount
         bestie.increment 'cards'
-        currLevel = bestie.get('level') or 1
-        score = bestie.get 'score'
-        if score >= currLevel * 21 # 21 = average points (7) * 3 cards
-          bestie.set 'level', currLevel + 1
         bestie.save(null, { useMasterKey: true })
           .then => console.log "updateBestieScore: success -- #{JSON.stringify bestie}"
           .fail (err) => console.error "updateBestieScore: ERROR -- #{JSON.stringify bestie}"
@@ -274,9 +263,8 @@ updateBestieScore = (user, peggee, points) ->
         newBestieAcl.setRoleReadAccess "#{user.id}_Friends", true
         newBestieAcl.setReadAccess user.id, true
         newBestie = new Parse.Object 'Bestie'
-        newBestie.set 'score', points
+        newBestie.set 'failCount', failCount
         newBestie.set 'cards', 1
-        newBestie.set 'level', 1
         newBestie.set 'friend', peggee
         newBestie.set 'user', user
         newBestie.set 'ACL', newBestieAcl
@@ -284,9 +272,8 @@ updateBestieScore = (user, peggee, points) ->
           .then => console.log "updateBestieScore: success -- #{JSON.stringify bestie}"
           .fail (err) => console.error "updateBestieScore: ERROR -- #{JSON.stringify bestie}"
 
-
 updateCardHasPreffed = (user, card) ->
-  token = user.getSessionToken()
+  #  token = user.getSessionToken()
   # # UPDATE card row with userId in hasPreffed array
   # cardQuery = new Parse.Query 'Card'
   # cardQuery.equalTo 'objectId', card.id
