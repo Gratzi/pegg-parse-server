@@ -98,7 +98,6 @@ Parse.Cloud.afterSave '_User', (request) ->
 
 Parse.Cloud.afterSave 'Pegg', (request) ->
   user = request.user
-
   if !request.object.existed()
     pref = request.object.get 'pref'
     card = request.object.get 'card'
@@ -107,12 +106,13 @@ Parse.Cloud.afterSave 'Pegg', (request) ->
     answer = request.object.get 'answer'
     question = request.object.get 'question'
     failCount = request.object.get 'failCount'
+    deck = request.object.get 'deck'
 
     # Correct! Save stats and update Bestie Score
     if guess.id is answer.id
       updatePrefStats user, card, pref, guess, true
-      # updateUserPeggedCards user, failCount
-      updateBestieScore user, peggee, failCount
+      updateUserStatsPegg user, deck, failCount
+      updateBestieScore user, peggee, failCount, deck
     else
       updatePrefStats user, card, pref, guess, false
 
@@ -121,16 +121,12 @@ Parse.Cloud.afterSave 'Pref', (request) ->
   user = request.user
   card = request.object.get 'card'
   answer = request.object.get 'answer'
-  mood = request.object.get 'mood'
+  deck = request.object.get 'deck'
   question = request.object.get 'question'
   updateCardHasPreffed user, card # updates hasPreffed on Card
   if !pref.existed() # if new object
     incrementChoiceCount answer.id, 'prefCount' # what's the most popular preference?
-    # updateUserPrefCount user
-
-Parse.Cloud.afterSave 'Flag', (request) ->
-  cardId = request.object.get('card').id
-  incrementCardCount cardId, 'flags'
+    updateUserStatsPref user, deck
 
 Parse.Cloud.afterSave 'UserPrivates', (request) ->
 # can't use afterSave Parse.User because on new user creation two saves happen, the first without any user details
@@ -142,22 +138,99 @@ Parse.Cloud.afterSave 'UserPrivates', (request) ->
     console.log "subscribing to MailChimp:", JSON.stringify {email, firstName, lastName}
     mailChimp.subscribe {email, firstName, lastName}
 
-######### HELPER #########
+######### UPDATES #########
 
-# note that this will not work if useMasterKey has been enabled within current request
-#getUserFriends = ->
-#  cardQuery = new Parse.Query 'User'
-#  cardQuery.notEqualTo 'objectId', Parse.User.current().id
-#  cardQuery.find()
-#    .then (friends) =>
-#      _.map friends, (friend) => friend.id
+updateUserStatsPref = (user, deck) ->
+  console.log "updateUserStatsPref: for user -- #{JSON.stringify user}"
+  user.fetch({sessionToken: token})
+  .then (user) =>
+    prefCounts = user.get 'prefCounts' or {}
+    if prefCounts[deck]? then prefCounts[deck]++ else prefCounts[deck] = 1
+    user.set 'prefCounts', prefCounts
+    user.increment 'prefCount'
+    user.set 'lastActiveDate', Date.now()
+    user.save()
 
-#getCardChoices = (card) ->
-#  cardQuery = new Parse.Query 'Card'
-#  cardQuery.equalTo 'objectId', card.id
-#  cardQuery.first()
-#    .then (result) =>
-#      result.get('choices') or {}
+updateUserStatsPegg = (user, failCount, deck) ->
+  console.log "updateUserStatsPegg: for user -- #{JSON.stringify user}"
+  user.fetch({sessionToken: token})
+  .then (user) =>
+    peggCounts = user.get 'peggCounts' or {}
+    if peggCounts[deck]? then peggCounts[deck]++ else peggCounts[deck] = 1
+    user.set 'peggCounts', peggCounts
+    user.increment 'failCount', failCount
+    user.increment 'peggCount'
+    user.set 'lastActiveDate', Date.now()
+    user.save()
+
+updatePrefStats = (user, card, pref, guess, correctAnswer) ->
+  token = user.getSessionToken()
+  pref.fetch({sessionToken: token})
+  .then (pref) =>
+    console.log "updatePrefStats: fetched pref -- #{JSON.stringify pref}"
+    choices = pref.get('choices')
+    if choices?
+      choices[guess.id].peggCount++
+      pref.set 'choices', choices
+    else
+      # Sometimes choices don't get populated on Pref creation, not sure why
+      console.log "ERROR: aaaaarg choices should exist... refetching..."
+      getChoices(card)
+      .then (choices) =>
+        choices[guess.id].peggCount++
+        pref.set 'choices', choices
+        pref.save(null, { useMasterKey: true })
+    if correctAnswer
+      # UPDATE Pref row(s) with userId in hasPegged array
+      pref.addUnique 'hasPegged', user.id
+    pref.save(null, { useMasterKey: true })
+    .then => console.log "updatePrefStats: success -- #{JSON.stringify pref}"
+    .fail (err) => console.error "updatePrefStats: ERROR -- #{JSON.stringify err}"
+
+updateBestieScore = (user, peggee, failCount, deck) ->
+  token = user.getSessionToken()
+  bestieQuery = new Parse.Query 'Bestie'
+  bestieQuery.equalTo 'friend', peggee
+  bestieQuery.equalTo 'user', user
+  bestieQuery.first({ sessionToken: token })
+  .then (bestie) ->
+    if bestie?
+      peggCounts = bestie.get 'peggCounts' or {}
+      if peggCounts[deck]? then peggCounts[deck]++ else peggCounts[deck] = 1
+      bestie.set 'peggCounts', peggCounts
+      bestie.increment 'failCount', failCount
+      bestie.increment 'cards'
+      bestie.save(null, { useMasterKey: true })
+      .then => console.log "updateBestieScore: success -- #{JSON.stringify bestie}"
+      .fail (err) => console.error "updateBestieScore: ERROR -- #{JSON.stringify bestie}"
+    else
+      newBestieAcl = new Parse.ACL()
+      newBestieAcl.setRoleReadAccess "#{user.id}_Friends", true
+      newBestieAcl.setReadAccess user.id, true
+      newBestie = new Parse.Object 'Bestie'
+      newBestie.set 'failCount', failCount
+      newBestie.set 'cards', 1
+      newBestie.set 'friend', peggee
+      newBestie.set 'user', user
+      if peggCounts[deck]? then peggCounts[deck]++ else peggCounts[deck] = 1
+      newBestie.set 'peggCounts', peggCounts
+      newBestie.set 'ACL', newBestieAcl
+      newBestie.save(null, { useMasterKey: true })
+      .then => console.log "updateBestieScore: success -- #{JSON.stringify bestie}"
+      .fail (err) => console.error "updateBestieScore: ERROR -- #{JSON.stringify bestie}"
+
+updateCardHasPreffed = (user, card) ->
+  if card.get('hasPreffed') is undefined
+    card.set 'hasPreffed', []
+  card.addUnique 'hasPreffed', user.id
+  card.save(null, { useMasterKey: true })
+  .fail (error) ->
+    console.log 'hasPreffed failed', error
+  .then =>
+    console.log "hasPreffed saved: #{card.id}"
+
+
+######### HELPERS #########
 
 # returns {<id>: {text: 'hey', peggCount: 0}, <id2>: ...}
 # requires useMasterKey
@@ -209,98 +282,3 @@ decrementChoiceCount = (choiceId, fieldName) ->
       if result?
         result.increment fieldName, -1
         result.save(null, { useMasterKey: true })
-
-# updateUserPeggedCards = (user, points) ->
-#   console.log "updateUserPeggedCards: for user -- #{JSON.stringify user} -- points #{points}"
-#   user.increment 'pegged_cards'
-#   user.increment 'pegg_score', points
-#   user.save()
-
-# updateUserPrefCount = (user) ->
-#   console.log "updateUserPrefCount: for user -- #{JSON.stringify user}"
-#   user.increment 'pref_count'
-#   user.save()
-
-updatePrefStats = (user, card, pref, guess, correctAnswer) ->
-  token = user.getSessionToken()
-  pref.fetch({sessionToken: token})
-    .then (pref) =>
-      console.log "updatePrefStats: fetched pref -- #{JSON.stringify pref}"
-      choices = pref.get('choices')
-      if choices?
-        choices[guess.id].peggCount += 1
-        pref.set 'choices', choices
-      else
-        # Sometimes choices don't get populated on Pref creation, not sure why
-        console.log "ERROR: aaaaarg choices should exist... refetching..."
-        getChoices(card)
-          .then (choices) =>
-            choices[guess.id].peggCount += 1
-            pref.set 'choices', choices
-            pref.save(null, { useMasterKey: true })
-      if correctAnswer
-      # UPDATE Pref row(s) with userId in hasPegged array
-        pref.addUnique 'hasPegged', user.id
-      pref.save(null, { useMasterKey: true })
-        .then => console.log "updatePrefStats: success -- #{JSON.stringify pref}"
-        .fail (err) => console.error "updatePrefStats: ERROR -- #{JSON.stringify err}"
-
-updateBestieScore = (user, peggee, failCount) ->
-  token = user.getSessionToken()
-  bestieQuery = new Parse.Query 'Bestie'
-  bestieQuery.equalTo 'friend', peggee
-  bestieQuery.equalTo 'user', user
-  bestieQuery.first({ sessionToken: token })
-    .then (bestie) ->
-      if bestie?
-        bestie.increment 'failCount', failCount
-        bestie.increment 'cards'
-        bestie.save(null, { useMasterKey: true })
-          .then => console.log "updateBestieScore: success -- #{JSON.stringify bestie}"
-          .fail (err) => console.error "updateBestieScore: ERROR -- #{JSON.stringify bestie}"
-      else
-        newBestieAcl = new Parse.ACL()
-        newBestieAcl.setRoleReadAccess "#{user.id}_Friends", true
-        newBestieAcl.setReadAccess user.id, true
-        newBestie = new Parse.Object 'Bestie'
-        newBestie.set 'failCount', failCount
-        newBestie.set 'cards', 1
-        newBestie.set 'friend', peggee
-        newBestie.set 'user', user
-        newBestie.set 'ACL', newBestieAcl
-        newBestie.save(null, { useMasterKey: true })
-          .then => console.log "updateBestieScore: success -- #{JSON.stringify bestie}"
-          .fail (err) => console.error "updateBestieScore: ERROR -- #{JSON.stringify bestie}"
-
-updateCardHasPreffed = (user, card) ->
-  #  token = user.getSessionToken()
-  # # UPDATE card row with userId in hasPreffed array
-  # cardQuery = new Parse.Query 'Card'
-  # cardQuery.equalTo 'objectId', card.id
-  # cardQuery.first({ sessionToken: token })
-  #   .fail ->
-  #     console.log 'hasPreffed failed'
-  #   .then (card) ->
-  #     # TODO: if card is user created, uncomment the ACL code below. Chaincasting!
-  #     # cardAcl = card.get 'ACL'
-  #     # if cardAcl isnt undefined
-  #     #   console.log "ACL added to card #{card.id}: #{user.id}_Friends"
-  #     #   cardAcl.setRoleReadAccess "#{user.id}_Friends", true
-  #     #   card.setACL cardAcl
-  if card.get('hasPreffed') is undefined
-    card.set 'hasPreffed', []
-  card.addUnique 'hasPreffed', user.id
-  card.save(null, { useMasterKey: true })
-    .fail (error) ->
-      console.log 'hasPreffed failed', error
-    .then =>
-      console.log "hasPreffed saved: #{card.id}"
-
-# must not be called with useMasterKey enabled
-getCardPrefsByFriends = (user, card) ->
-  token = user.getSessionToken()
-  prefQuery = new Parse.Query 'Pref'
-  prefQuery.equalTo 'card', card
-  prefQuery.notEqualTo 'user', user
-  prefQuery.limit 1000
-  prefQuery.find({ sessionToken: token })
