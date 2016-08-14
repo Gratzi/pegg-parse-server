@@ -147,6 +147,7 @@ updateUserStatsPref = (user, deck) ->
   .then (user) =>
     prefCounts = user.get('prefCounts') or {}
     if prefCounts[deck]? then prefCounts[deck]++ else prefCounts[deck] = 1
+    console.log "PREFCOUNTS:::::::::::::::: #{prefCounts}"
     user.set 'prefCounts', prefCounts
     user.increment 'prefCount'
     user.set 'lastActiveDate', Date.now()
