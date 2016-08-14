@@ -147,11 +147,10 @@ updateUserStatsPref = (user, deck) ->
   .then (user) =>
     prefCounts = user.get('prefCounts') or {}
     if prefCounts[deck]? then prefCounts[deck]++ else prefCounts[deck] = 1
-    console.log "PREFCOUNTS:::::::::::::::: #{prefCounts}"
     user.set 'prefCounts', prefCounts
     user.increment 'prefCount'
     user.set 'lastActiveDate', Date.now()
-    user.save()
+    user.save(null, {sessionToken: token})
 
 updateUserStatsPegg = (user, failCount, deck) ->
   console.log "updateUserStatsPegg: for user -- #{JSON.stringify user}"
@@ -164,7 +163,7 @@ updateUserStatsPegg = (user, failCount, deck) ->
     user.increment 'failCount', failCount
     user.increment 'peggCount'
     user.set 'lastActiveDate', Date.now()
-    user.save()
+    user.save(null, {sessionToken: token})
 
 updatePrefStats = (user, card, pref, guess, correctAnswer) ->
   token = user.getSessionToken()
