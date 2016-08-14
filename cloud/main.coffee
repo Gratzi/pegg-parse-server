@@ -142,6 +142,7 @@ Parse.Cloud.afterSave 'UserPrivates', (request) ->
 
 updateUserStatsPref = (user, deck) ->
   console.log "updateUserStatsPref: for user -- #{JSON.stringify user}"
+  token = user.getSessionToken()
   user.fetch({sessionToken: token})
   .then (user) =>
     prefCounts = user.get 'prefCounts' or {}
@@ -153,6 +154,7 @@ updateUserStatsPref = (user, deck) ->
 
 updateUserStatsPegg = (user, failCount, deck) ->
   console.log "updateUserStatsPegg: for user -- #{JSON.stringify user}"
+  token = user.getSessionToken()
   user.fetch({sessionToken: token})
   .then (user) =>
     peggCounts = user.get 'peggCounts' or {}
@@ -220,14 +222,17 @@ updateBestieScore = (user, peggee, failCount, deck) ->
       .fail (err) => console.error "updateBestieScore: ERROR -- #{JSON.stringify bestie}"
 
 updateCardHasPreffed = (user, card) ->
-  if card.get('hasPreffed') is undefined
-    card.set 'hasPreffed', []
-  card.addUnique 'hasPreffed', user.id
-  card.save(null, { useMasterKey: true })
-  .fail (error) ->
-    console.log 'hasPreffed failed', error
-  .then =>
-    console.log "hasPreffed saved: #{card.id}"
+  token = user.getSessionToken()
+  card.fetch({sessionToken: token})
+  .then (card) =>
+    if card.get('hasPreffed') is undefined
+      card.set 'hasPreffed', []
+    card.addUnique 'hasPreffed', user.id
+    card.save(null, { useMasterKey: true })
+    .fail (error) ->
+      console.log 'hasPreffed failed', error
+    .then =>
+      console.log "hasPreffed saved: #{card.id}"
 
 
 ######### HELPERS #########
