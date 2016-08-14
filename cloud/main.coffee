@@ -145,7 +145,7 @@ updateUserStatsPref = (user, deck) ->
   token = user.getSessionToken()
   user.fetch({sessionToken: token})
   .then (user) =>
-    prefCounts = user.get 'prefCounts' or {}
+    prefCounts = user.get('prefCounts') or {}
     if prefCounts[deck]? then prefCounts[deck]++ else prefCounts[deck] = 1
     user.set 'prefCounts', prefCounts
     user.increment 'prefCount'
@@ -157,7 +157,7 @@ updateUserStatsPegg = (user, failCount, deck) ->
   token = user.getSessionToken()
   user.fetch({sessionToken: token})
   .then (user) =>
-    peggCounts = user.get 'peggCounts' or {}
+    peggCounts = user.get('peggCounts') or {}
     if peggCounts[deck]? then peggCounts[deck]++ else peggCounts[deck] = 1
     user.set 'peggCounts', peggCounts
     user.increment 'failCount', failCount
@@ -197,7 +197,7 @@ updateBestieScore = (user, peggee, failCount, deck) ->
   bestieQuery.first({ sessionToken: token })
   .then (bestie) ->
     if bestie?
-      peggCounts = bestie.get 'peggCounts' or {}
+      peggCounts = bestie.get('peggCounts') or {}
       if peggCounts[deck]? then peggCounts[deck]++ else peggCounts[deck] = 1
       bestie.set 'peggCounts', peggCounts
       bestie.increment 'failCount', failCount
