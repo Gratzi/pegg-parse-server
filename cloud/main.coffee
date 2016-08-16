@@ -111,7 +111,7 @@ Parse.Cloud.afterSave 'Pegg', (request) ->
     # Correct! Save stats and update Bestie Score
     if guess.id is answer.id
       updatePrefStats user, card, pref, guess, true
-      updateUserStatsPegg user, deck, failCount
+      updateUserStatsPegg user, failCount, deck
       updateBestieScore user, peggee, failCount, deck
     else
       updatePrefStats user, card, pref, guess, false
