@@ -214,6 +214,7 @@ updateBestieScore = (user, peggee, failCount, deck) ->
       newBestie.set 'cards', 1
       newBestie.set 'friend', peggee
       newBestie.set 'user', user
+      peggCounts = {}
       if peggCounts[deck]? then peggCounts[deck]++ else peggCounts[deck] = 1
       newBestie.set 'peggCounts', peggCounts
       newBestie.set 'ACL', newBestieAcl
