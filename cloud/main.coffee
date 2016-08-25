@@ -97,6 +97,7 @@ Parse.Cloud.afterSave '_User', (request) ->
         role.save(null, { useMasterKey: true })
 
 Parse.Cloud.afterSave 'Pegg', (request) ->
+  console.log "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! OMG"
   user = request.user
   if !request.object.existed()
     pref = request.object.get 'pref'
