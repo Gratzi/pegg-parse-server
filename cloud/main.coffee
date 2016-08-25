@@ -180,10 +180,10 @@ updatePrefStats = (user, card, pref, guess, correctAnswer) ->
         # Sometimes choices don't get populated on Pref creation, not sure why
         console.log "ERROR: aaaaarg choices should exist... refetching..."
           getChoices(card)
-          .then (choices) =>
-            choices[guess.id].peggCount++
-            pref.set 'choices', choices
-            pref.save(null, { useMasterKey: true })
+            .then (choices) =>
+              choices[guess.id].peggCount++
+              pref.set 'choices', choices
+              pref.save(null, { useMasterKey: true })
       if correctAnswer
         # UPDATE Pref row(s) with userId in hasPegged array
         pref.addUnique 'hasPegged', user.id
@@ -205,8 +205,8 @@ updateBestieScore = (user, peggee, failCount, deck) ->
         bestie.increment 'failCount', failCount
         bestie.increment 'cards'
         bestie.save(null, { useMasterKey: true })
-        .then => console.log "updateBestieScore: success -- #{JSON.stringify bestie}"
-        .fail (err) => console.error "updateBestieScore: ERROR -- #{JSON.stringify bestie}"
+          .then => console.log "updateBestieScore: success -- #{JSON.stringify bestie}"
+          .fail (err) => console.error "updateBestieScore: ERROR -- #{JSON.stringify bestie}"
       else
         newBestieAcl = new Parse.ACL()
         newBestieAcl.setRoleReadAccess "#{user.id}_Friends", true
