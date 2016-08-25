@@ -168,6 +168,7 @@ updateUserStatsPegg = (user, failCount, deck) ->
 updatePrefStats = (user, card, pref, guess, correctAnswer) ->
   token = user.getSessionToken()
   pref.fetch({sessionToken: token})
+  .fail (err) => console.error "updatePrefStats: ERROR -- #{JSON.stringify err}"
   .then (pref) =>
     console.log "updatePrefStats: fetched pref -- #{JSON.stringify pref}"
     choices = pref.get('choices')
@@ -186,8 +187,8 @@ updatePrefStats = (user, card, pref, guess, correctAnswer) ->
       # UPDATE Pref row(s) with userId in hasPegged array
       pref.addUnique 'hasPegged', user.id
     pref.save(null, { useMasterKey: true })
-    .then => console.log "updatePrefStats: success -- #{JSON.stringify pref}"
     .fail (err) => console.error "updatePrefStats: ERROR -- #{JSON.stringify err}"
+    .then => console.log "updatePrefStats: success -- #{JSON.stringify pref}"
 
 updateBestieScore = (user, peggee, failCount, deck) ->
   token = user.getSessionToken()
