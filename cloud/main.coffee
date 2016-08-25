@@ -179,11 +179,11 @@ updatePrefStats = (user, card, pref, guess, correctAnswer) ->
       else
         # Sometimes choices don't get populated on Pref creation, not sure why
         console.log "ERROR: aaaaarg choices should exist... refetching..."
-          getChoices(card)
-            .then (choices) =>
-              choices[guess.id].peggCount++
-              pref.set 'choices', choices
-              pref.save(null, { useMasterKey: true })
+        getChoices(card)
+          .then (choices) =>
+            choices[guess.id].peggCount++
+            pref.set 'choices', choices
+            pref.save(null, { useMasterKey: true })
       if correctAnswer
         # UPDATE Pref row(s) with userId in hasPegged array
         pref.addUnique 'hasPegged', user.id
