@@ -144,26 +144,26 @@ updateUserStatsPref = (user, deck) ->
   console.log "updateUserStatsPref: for user -- #{JSON.stringify user}"
   token = user.getSessionToken()
   user.fetch({sessionToken: token})
-  .then (user) =>
-    prefCounts = user.get('prefCounts') or {}
-    if prefCounts[deck]? then prefCounts[deck]++ else prefCounts[deck] = 1
-    user.set 'prefCounts', prefCounts
-    user.increment 'prefCount'
-    user.set 'lastActiveDate', Date.now()
-    user.save(null, {sessionToken: token})
+    .then (user) =>
+      prefCounts = user.get('prefCounts') or {}
+      if prefCounts[deck]? then prefCounts[deck]++ else prefCounts[deck] = 1
+      user.set 'prefCounts', prefCounts
+      user.increment 'prefCount'
+      user.set 'lastActiveDate', Date.now()
+      user.save(null, {sessionToken: token})
 
 updateUserStatsPegg = (user, failCount, deck) ->
   console.log "updateUserStatsPegg: for user -- #{JSON.stringify user}"
   token = user.getSessionToken()
   user.fetch({sessionToken: token})
-  .then (user) =>
-    peggCounts = user.get('peggCounts') or {}
-    if peggCounts[deck]? then peggCounts[deck]++ else peggCounts[deck] = 1
-    user.set 'peggCounts', peggCounts
-    user.increment 'failCount', failCount
-    user.increment 'peggCount'
-    user.set 'lastActiveDate', Date.now()
-    user.save(null, {sessionToken: token})
+    .then (user) =>
+      peggCounts = user.get('peggCounts') or {}
+      if peggCounts[deck]? then peggCounts[deck]++ else peggCounts[deck] = 1
+      user.set 'peggCounts', peggCounts
+      user.increment 'failCount', failCount
+      user.increment 'peggCount'
+      user.set 'lastActiveDate', Date.now()
+      user.save(null, {sessionToken: token})
 
 updatePrefStats = (user, card, pref, guess, correctAnswer) ->
   console.error "updatePrefStats:", pref
@@ -197,45 +197,45 @@ updateBestieScore = (user, peggee, failCount, deck) ->
   bestieQuery.equalTo 'friend', peggee
   bestieQuery.equalTo 'user', user
   bestieQuery.first({ sessionToken: token })
-  .then (bestie) ->
-    if bestie?
-      peggCounts = bestie.get('peggCounts') or {}
-      if peggCounts[deck]? then peggCounts[deck]++ else peggCounts[deck] = 1
-      bestie.set 'peggCounts', peggCounts
-      bestie.increment 'failCount', failCount
-      bestie.increment 'cards'
-      bestie.save(null, { useMasterKey: true })
-      .then => console.log "updateBestieScore: success -- #{JSON.stringify bestie}"
-      .fail (err) => console.error "updateBestieScore: ERROR -- #{JSON.stringify bestie}"
-    else
-      newBestieAcl = new Parse.ACL()
-      newBestieAcl.setRoleReadAccess "#{user.id}_Friends", true
-      newBestieAcl.setReadAccess user.id, true
-      newBestie = new Parse.Object 'Bestie'
-      newBestie.set 'failCount', failCount
-      newBestie.set 'cards', 1
-      newBestie.set 'friend', peggee
-      newBestie.set 'user', user
-      peggCounts = {}
-      if peggCounts[deck]? then peggCounts[deck]++ else peggCounts[deck] = 1
-      newBestie.set 'peggCounts', peggCounts
-      newBestie.set 'ACL', newBestieAcl
-      newBestie.save(null, { useMasterKey: true })
-      .then => console.log "updateBestieScore: success -- #{JSON.stringify bestie}"
-      .fail (err) => console.error "updateBestieScore: ERROR -- #{JSON.stringify bestie}"
+    .then (bestie) ->
+      if bestie?
+        peggCounts = bestie.get('peggCounts') or {}
+        if peggCounts[deck]? then peggCounts[deck]++ else peggCounts[deck] = 1
+        bestie.set 'peggCounts', peggCounts
+        bestie.increment 'failCount', failCount
+        bestie.increment 'cards'
+        bestie.save(null, { useMasterKey: true })
+        .then => console.log "updateBestieScore: success -- #{JSON.stringify bestie}"
+        .fail (err) => console.error "updateBestieScore: ERROR -- #{JSON.stringify bestie}"
+      else
+        newBestieAcl = new Parse.ACL()
+        newBestieAcl.setRoleReadAccess "#{user.id}_Friends", true
+        newBestieAcl.setReadAccess user.id, true
+        newBestie = new Parse.Object 'Bestie'
+        newBestie.set 'failCount', failCount
+        newBestie.set 'cards', 1
+        newBestie.set 'friend', peggee
+        newBestie.set 'user', user
+        peggCounts = {}
+        if peggCounts[deck]? then peggCounts[deck]++ else peggCounts[deck] = 1
+        newBestie.set 'peggCounts', peggCounts
+        newBestie.set 'ACL', newBestieAcl
+        newBestie.save(null, { useMasterKey: true })
+          .then => console.log "updateBestieScore: success -- #{JSON.stringify bestie}"
+          .fail (err) => console.error "updateBestieScore: ERROR -- #{JSON.stringify bestie}"
 
 updateCardHasPreffed = (user, card) ->
   token = user.getSessionToken()
   card.fetch({sessionToken: token})
-  .then (card) =>
-    if card.get('hasPreffed') is undefined
-      card.set 'hasPreffed', []
-    card.addUnique 'hasPreffed', user.id
-    card.save(null, { useMasterKey: true })
-    .fail (error) ->
-      console.log 'hasPreffed failed', error
-    .then =>
-      console.log "hasPreffed saved: #{card.id}"
+    .then (card) =>
+      if card.get('hasPreffed') is undefined
+        card.set 'hasPreffed', []
+      card.addUnique 'hasPreffed', user.id
+      card.save(null, { useMasterKey: true })
+        .fail (error) ->
+          console.log 'hasPreffed failed', error
+        .then =>
+          console.log "hasPreffed saved: #{card.id}"
 
 
 ######### HELPERS #########
