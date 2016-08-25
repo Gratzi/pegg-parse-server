@@ -97,7 +97,6 @@ Parse.Cloud.afterSave '_User', (request) ->
         role.save(null, { useMasterKey: true })
 
 Parse.Cloud.afterSave 'Pegg', (request) ->
-  console.log "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! OMG"
   user = request.user
   if !request.object.existed()
     pref = request.object.get 'pref'
@@ -111,11 +110,11 @@ Parse.Cloud.afterSave 'Pegg', (request) ->
 
     # Correct! Save stats and update Bestie Score
     if guess.id is answer.id
-#      updatePrefStats user, card, pref, guess, true
+      updatePrefStats user, card, pref, guess, true
       updateUserStatsPegg user, failCount, deck
       updateBestieScore user, peggee, failCount, deck
     else
-#      updatePrefStats user, card, pref, guess, false
+      updatePrefStats user, card, pref, guess, false
 
 Parse.Cloud.afterSave 'Pref', (request) ->
   pref = request.object
@@ -170,27 +169,27 @@ updatePrefStats = (user, card, pref, guess, correctAnswer) ->
   console.error "updatePrefStats:", pref
   token = user.getSessionToken()
   pref.fetch({sessionToken: token})
-  .fail (err) => console.error "updatePrefStats: ERROR -- #{JSON.stringify err}"
-  .then (pref) =>
-    console.log "updatePrefStats: fetched pref -- #{JSON.stringify pref}"
-    choices = pref.get('choices')
-    if choices?
-      choices[guess.id].peggCount++
-      pref.set 'choices', choices
-    else
-      # Sometimes choices don't get populated on Pref creation, not sure why
-      console.log "ERROR: aaaaarg choices should exist... refetching..."
-      getChoices(card)
-      .then (choices) =>
+    .fail (err) => console.error "updatePrefStats: ERROR -- #{JSON.stringify err}"
+    .then (pref) =>
+      console.log "updatePrefStats: fetched pref -- #{JSON.stringify pref}"
+      choices = pref.get('choices')
+      if choices?
         choices[guess.id].peggCount++
         pref.set 'choices', choices
-        pref.save(null, { useMasterKey: true })
-    if correctAnswer
-      # UPDATE Pref row(s) with userId in hasPegged array
-      pref.addUnique 'hasPegged', user.id
-    pref.save(null, { useMasterKey: true })
-    .fail (err) => console.error "updatePrefStats: ERROR -- #{JSON.stringify err}"
-    .then => console.log "updatePrefStats: success -- #{JSON.stringify pref}"
+      else
+        # Sometimes choices don't get populated on Pref creation, not sure why
+        console.log "ERROR: aaaaarg choices should exist... refetching..."
+          getChoices(card)
+          .then (choices) =>
+            choices[guess.id].peggCount++
+            pref.set 'choices', choices
+            pref.save(null, { useMasterKey: true })
+      if correctAnswer
+        # UPDATE Pref row(s) with userId in hasPegged array
+        pref.addUnique 'hasPegged', user.id
+      pref.save(null, { useMasterKey: true })
+        .fail (err) => console.error "updatePrefStats: ERROR -- #{JSON.stringify err}"
+        .then => console.log "updatePrefStats: success -- #{JSON.stringify pref}"
 
 updateBestieScore = (user, peggee, failCount, deck) ->
   token = user.getSessionToken()
