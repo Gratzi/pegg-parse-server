@@ -126,7 +126,7 @@ Parse.Cloud.afterSave 'Pref', (request) ->
   updateCardHasPreffed user, card # updates hasPreffed on Card
   if !pref.existed() # if new object
     incrementChoiceCount answer.id, 'prefCount' # what's the most popular preference?
-    updateUserStatsPref user, deck
+#    updateUserStatsPref user, deck
 
 Parse.Cloud.afterSave 'UserPrivates', (request) ->
 # can't use afterSave Parse.User because on new user creation two saves happen, the first without any user details
