@@ -166,6 +166,7 @@ updateUserStatsPegg = (user, failCount, deck) ->
     user.save(null, {sessionToken: token})
 
 updatePrefStats = (user, card, pref, guess, correctAnswer) ->
+  console.error "updatePrefStats:", pref
   token = user.getSessionToken()
   pref.fetch({sessionToken: token})
   .fail (err) => console.error "updatePrefStats: ERROR -- #{JSON.stringify err}"
