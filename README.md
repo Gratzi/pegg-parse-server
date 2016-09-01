@@ -31,6 +31,10 @@ parse-dashboard --config dashboard-config.json
 
 #### Refresh Mongo From Seed
 
+This will create dump/dbname. Replace dump pegg-seed with that.
+
+##### Local DB
+
 ```
 mongorestore [--dump] -d [dbname] dump/pegg-seed
 ```
@@ -41,7 +45,17 @@ Recreate the seed:
 mongodump -d [dbname]
 ```
 
-This will create dump/dbname. Replace dump pegg-seed with that.
+##### Remote DB
+
+```
+mongorestore -u [user] -p [password] -h [host[,host]] --drop -d [dbname] dump/pegg-seed/
+```
+
+Recreate the seed:
+
+```
+mongodump -u [user] -p [password] -h [host[,host]] -d [dbname]
+```
 
 ### Getting Started With Heroku + Mongolab Development
 

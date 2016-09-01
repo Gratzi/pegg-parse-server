@@ -48,7 +48,7 @@ app.get '/', (req, res) ->
 port = process.env.PORT or 1337
 httpServer = require('http').createServer(app)
 httpServer.listen port, ->
-  console.log 'parse-server-example running on port ' + port + '.'
+  console.log 'pegg-parse-server running on port ' + port + '.'
 
 # This will enable the Live Query real-time server
 ParseServer.createLiveQueryServer httpServer
