@@ -43,6 +43,8 @@ Recreate the seed:
 
 ```
 mongodump -d [dbname]
+rm -rf dump/pegg-seed/
+mv dump/[dbname] dump/pegg-seed
 ```
 
 ##### Remote DB
@@ -55,6 +57,8 @@ Recreate the seed:
 
 ```
 mongodump -u [user] -p [password] -h [host[,host]] -d [dbname]
+rm -rf dump/pegg-seed/
+mv dump/[dbname] dump/pegg-seed
 ```
 
 ### Getting Started With Heroku + Mongolab Development
