@@ -21,7 +21,7 @@
     "lodash": "^4.13.1",
     "node-pushnotifications": "^0.1.8",
     "parse": "~1.8.0",
-    "parse-server": "~2.2.11",
+    "parse-server": "~2.2.13",
     "sha1": "^1.1.1",
     "underscore": "^1.8.3"
   },

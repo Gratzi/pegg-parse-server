@@ -221,8 +221,8 @@ updateBestieScore = (user, peggee, failCount, deck) ->
         newBestie.set 'peggCounts', peggCounts
         newBestie.set 'ACL', newBestieAcl
         newBestie.save(null, { useMasterKey: true })
-          .then => console.log "updateBestieScore: success -- #{JSON.stringify bestie}"
-          .fail (err) => console.error "updateBestieScore: ERROR -- #{JSON.stringify bestie}"
+          .then => console.log "updateBestieScore: success -- #{JSON.stringify newBestie}"
+          .fail (err) => console.error "updateBestieScore: ERROR -- #{JSON.stringify newBestie}"
 
 updateCardHasPreffed = (user, card) ->
   token = user.getSessionToken()
