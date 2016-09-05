@@ -111,7 +111,6 @@ Parse.Cloud.afterSave 'Pegg', (request) ->
     # Correct! Save stats and update Bestie Score
     if guess.id is answer.id
       updatePrefStats user, card, pref, guess, true
-      updateUserStatsPegg user, failCount, deck
       updateBestieScore user, peggee, failCount, deck
     else
       updatePrefStats user, card, pref, guess, false
@@ -126,7 +125,6 @@ Parse.Cloud.afterSave 'Pref', (request) ->
   updateCardHasPreffed user, card # updates hasPreffed on Card
   if !pref.existed() # if new object
     incrementChoiceCount answer.id, 'prefCount' # what's the most popular preference?
-#    updateUserStatsPref user, deck
 
 Parse.Cloud.afterSave 'UserPrivates', (request) ->
 # can't use afterSave Parse.User because on new user creation two saves happen, the first without any user details
@@ -139,31 +137,6 @@ Parse.Cloud.afterSave 'UserPrivates', (request) ->
     mailChimp.subscribe {email, firstName, lastName}
 
 ######### UPDATES #########
-
-updateUserStatsPref = (user, deck) ->
-  console.log "updateUserStatsPref: for user -- #{JSON.stringify user}"
-  token = user.getSessionToken()
-  user.fetch({sessionToken: token})
-    .then (user) =>
-      prefCounts = user.get('prefCounts') or {}
-      if prefCounts[deck]? then prefCounts[deck]++ else prefCounts[deck] = 1
-      user.set 'prefCounts', prefCounts
-      user.increment 'prefCount'
-      user.set 'lastActiveDate', Date.now()
-      user.save(null, {sessionToken: token})
-
-updateUserStatsPegg = (user, failCount, deck) ->
-  console.log "updateUserStatsPegg: for user -- #{JSON.stringify user}"
-  token = user.getSessionToken()
-  user.fetch({sessionToken: token})
-    .then (user) =>
-      peggCounts = user.get('peggCounts') or {}
-      if peggCounts[deck]? then peggCounts[deck]++ else peggCounts[deck] = 1
-      user.set 'peggCounts', peggCounts
-      user.increment 'failCount', failCount
-      user.increment 'peggCount'
-      user.set 'lastActiveDate', Date.now()
-      user.save(null, {sessionToken: token})
 
 updatePrefStats = (user, card, pref, guess, correctAnswer) ->
   console.error "updatePrefStats:", pref
