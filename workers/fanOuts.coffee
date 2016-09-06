@@ -17,37 +17,38 @@ FIREBASE_DATABASE_URL = process.env.FIREBASE_DATABASE_URL or fail "cannot have a
 
 fanOutsChannel = null
 
-firebase = new Firebase FIREBASE_DATABASE_URL
-log "authing firebase", FIREBASE_SECRET
-firebase.authWithCustomToken FIREBASE_SECRET, (error, authData) =>
-  if error?
-    errorLog "Firebase login failed!", error
-    throw error
-  else
-    log "logged into Firebase"
-    fanOutsChannel = firebase.child 'fanOuts'
-    options =
-      # specId: 'spec'
-      # sanitize: false
-      numWorkers: 5
-    queue = new Queue fanOutsChannel, options, fanOut
-
-fanOut = (data, progress, resolve, reject) =>
-  try
-    log "fanning out friendsUpdate notifications", data
-    notified = for friendId in data.friends
-      firebase.child("inbound/#{friendId}").push
-        timestamp: data.timestamp
-        type: 'friendsUpdate'
-        friendId: data.userId
-    notified.push firebase.child("inbound/#{data.userId}").push
-      timestamp: data.timestamp
-      type: 'friendsUpdate'
-    Promise.when notified
-      .fail (error) =>
-        reject error
-        errorLog error
-      .then => resolve()
-  catch error
-    errorLog "Error while receiving new message: ", error
-    reject error
+# firebase = new Firebase FIREBASE_DATABASE_URL
+# log "authing firebase", FIREBASE_SECRET
+# firebase.authWithCustomToken FIREBASE_SECRET, (error, authData) =>
+#   log "firebase auth callback", error, authData
+#   if error?
+#     errorLog "Firebase login failed!", error
+#     throw error
+#   else
+#     log "logged into Firebase"
+#     fanOutsChannel = firebase.child 'fanOuts'
+#     options =
+#       # specId: 'spec'
+#       # sanitize: false
+#       numWorkers: 5
+#     queue = new Queue fanOutsChannel, options, fanOut
+#
+# fanOut = (data, progress, resolve, reject) =>
+#   try
+#     log "fanning out friendsUpdate notifications", data
+#     notified = for friendId in data.friends
+#       firebase.child("inbound/#{friendId}").push
+#         timestamp: data.timestamp
+#         type: 'friendsUpdate'
+#         friendId: data.userId
+#     notified.push firebase.child("inbound/#{data.userId}").push
+#       timestamp: data.timestamp
+#       type: 'friendsUpdate'
+#     Promise.when notified
+#       .fail (error) =>
+#         reject error
+#         errorLog error
+#       .then => resolve()
+#   catch error
+#     errorLog "Error while receiving new message: ", error
+#     reject error
