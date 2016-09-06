@@ -12,6 +12,8 @@ fail = (err) ->
   errorLog err
   throw err
 
+log "push worker is alive"
+
 FIREBASE_SECRET = process.env.FIREBASE_SECRET or fail "cannot have an empty FIREBASE_SECRET"
 FIREBASE_DATABASE_URL = process.env.FIREBASE_DATABASE_URL or fail "cannot have an empty FIREBASE_DATABASE_URL"
 GCM_API_KEY = process.env.GCM_API_KEY or fail "cannot have an empty GCM_API_KEY"
@@ -41,13 +43,15 @@ push = new PushNotifications pushSettings
 pushChannel = null
 registrationIdsChannel = null
 
+log "setting up firebase"
+
 firebase = new Firebase FIREBASE_DATABASE_URL
 firebase.authWithCustomToken FIREBASE_SECRET, (error, authData) =>
   if error?
     errorLog "Firebase login failed!", error
     throw error
   else
-    log "Firebase login succeeded"
+    log "logged into Firebase"
     registrationIdsChannel = firebase.child 'registrationIds'
     pushChannel = firebase.child 'push'
     options =
