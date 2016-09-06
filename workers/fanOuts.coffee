@@ -18,6 +18,7 @@ FIREBASE_DATABASE_URL = process.env.FIREBASE_DATABASE_URL or fail "cannot have a
 fanOutsChannel = null
 
 firebase = new Firebase FIREBASE_DATABASE_URL
+log "authing firebase", FIREBASE_SECRET
 firebase.authWithCustomToken FIREBASE_SECRET, (error, authData) =>
   if error?
     errorLog "Firebase login failed!", error

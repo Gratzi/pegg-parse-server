@@ -12,8 +12,6 @@ fail = (err) ->
   errorLog err
   throw err
 
-log "push worker is alive"
-
 FIREBASE_SECRET = process.env.FIREBASE_SECRET or fail "cannot have an empty FIREBASE_SECRET"
 FIREBASE_DATABASE_URL = process.env.FIREBASE_DATABASE_URL or fail "cannot have an empty FIREBASE_DATABASE_URL"
 GCM_API_KEY = process.env.GCM_API_KEY or fail "cannot have an empty GCM_API_KEY"
@@ -43,49 +41,48 @@ push = new PushNotifications pushSettings
 pushChannel = null
 registrationIdsChannel = null
 
-log "setting up firebase"
 firebase = new Firebase FIREBASE_DATABASE_URL
-log "authing firebase"
+log "authing firebase", FIREBASE_SECRET
 firebase.authWithCustomToken FIREBASE_SECRET, (error, authData) =>
   log "firebase auth callback", error, authData
-  if error?
-    errorLog "Firebase login failed!", error
-    throw error
-  else
-    log "logged into Firebase"
-    registrationIdsChannel = firebase.child 'registrationIds'
-    pushChannel = firebase.child 'push'
-    options =
-      specId: 'spec'
-      sanitize: false
-      numWorkers: 5
-    queue = new Queue pushChannel, options, newMessage
-
-newMessage = (notification, progress, resolve, reject) =>
-  try
-    receiver = notification.data.receiver
-    if receiver?
-      registrationIdsChannel.child(receiver).once 'value', (registrationsSnapshot) =>
-        registrations = registrationsSnapshot.val()
-        registrationIds = _.keys registrations
-        if _.isEmpty registrationIds
-          reject "no current device registrations"
-          pushChannel.child('tasks').child(notification._id).remove()
-        else
-          sendPush registrationIds, notification, progress, resolve, reject
-  catch error
-    errorLog "Error while receiving new message: ", error
-    reject error
-
-sendPush = (registrationIds, notification, progress, resolve, reject) ->
-  try
-    log "sending push: ", notification
-    push.send registrationIds, notification, (error, result) ->
-      if error?
-        errorLog error, { registrationIds }
-        reject error
-      else
-        resolve()
-  catch error
-    errorLog "Error while sending push: ", error
-    reject error
+#   if error?
+#     errorLog "Firebase login failed!", error
+#     throw error
+#   else
+#     log "logged into Firebase"
+#     registrationIdsChannel = firebase.child 'registrationIds'
+#     pushChannel = firebase.child 'push'
+#     options =
+#       specId: 'spec'
+#       sanitize: false
+#       numWorkers: 5
+#     queue = new Queue pushChannel, options, newMessage
+#
+# newMessage = (notification, progress, resolve, reject) =>
+#   try
+#     receiver = notification.data.receiver
+#     if receiver?
+#       registrationIdsChannel.child(receiver).once 'value', (registrationsSnapshot) =>
+#         registrations = registrationsSnapshot.val()
+#         registrationIds = _.keys registrations
+#         if _.isEmpty registrationIds
+#           reject "no current device registrations"
+#           pushChannel.child('tasks').child(notification._id).remove()
+#         else
+#           sendPush registrationIds, notification, progress, resolve, reject
+#   catch error
+#     errorLog "Error while receiving new message: ", error
+#     reject error
+#
+# sendPush = (registrationIds, notification, progress, resolve, reject) ->
+#   try
+#     log "sending push: ", notification
+#     push.send registrationIds, notification, (error, result) ->
+#       if error?
+#         errorLog error, { registrationIds }
+#         reject error
+#       else
+#         resolve()
+#   catch error
+#     errorLog "Error while sending push: ", error
+#     reject error
