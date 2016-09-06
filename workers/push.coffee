@@ -44,9 +44,10 @@ registrationIdsChannel = null
 firebase = new Firebase FIREBASE_DATABASE_URL
 firebase.authWithCustomToken FIREBASE_SECRET, (error, authData) =>
   if error?
-    console.error "Firebase login failed!", error
+    errorLog "Firebase login failed!", error
     throw error
   else
+    log "Firebase login succeeded"
     registrationIdsChannel = firebase.child 'registrationIds'
     pushChannel = firebase.child 'push'
     options =
@@ -68,18 +69,18 @@ newMessage = (notification, progress, resolve, reject) =>
         else
           sendPush registrationIds, notification, progress, resolve, reject
   catch error
-    console.error "Error while receiving new message: ", error
+    errorLog "Error while receiving new message: ", error
     reject error
 
 sendPush = (registrationIds, notification, progress, resolve, reject) ->
   try
-    console.log "sending push: ", notification
+    log "sending push: ", notification
     push.send registrationIds, notification, (error, result) ->
       if error?
-        console.error error, { registrationIds }
+        errorLog error, { registrationIds }
         reject error
       else
         resolve()
   catch error
-    console.error "Error while sending push: ", error
+    errorLog "Error while sending push: ", error
     reject error
