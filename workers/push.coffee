@@ -44,9 +44,10 @@ pushChannel = null
 registrationIdsChannel = null
 
 log "setting up firebase"
-
 firebase = new Firebase FIREBASE_DATABASE_URL
+log "authing firebase"
 firebase.authWithCustomToken FIREBASE_SECRET, (error, authData) =>
+  log "firebase auth callback", error, authData
   if error?
     errorLog "Firebase login failed!", error
     throw error
