@@ -175,6 +175,7 @@ updateBestieScore = (user, peggee, failCount, deck) ->
         peggCounts = bestie.get('peggCounts') or {}
         if peggCounts[deck]? then peggCounts[deck]++ else peggCounts[deck] = 1
         bestie.set 'peggCounts', peggCounts
+        bestie.set 'lastDeck', deck
         bestie.increment 'failCount', failCount
         bestie.increment 'cards'
         bestie.save(null, { useMasterKey: true })
@@ -189,6 +190,7 @@ updateBestieScore = (user, peggee, failCount, deck) ->
         newBestie.set 'cards', 1
         newBestie.set 'friend', peggee
         newBestie.set 'user', user
+        newBestie.set 'lastDeck', deck
         peggCounts = {}
         if peggCounts[deck]? then peggCounts[deck]++ else peggCounts[deck] = 1
         newBestie.set 'peggCounts', peggCounts
