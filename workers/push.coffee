@@ -81,11 +81,11 @@ class PushWorker
       @push.send registrationIds, notification, (error, result) ->
         if error?
           errorLog error, { registrationIds }
-          reject error
+          reject error.toString()
         else
           resolve()
     catch error
       errorLog "Error while sending push: ", error
-      reject error
+      reject error.toString()
 
 module.exports = PushWorker
