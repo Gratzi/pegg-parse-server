@@ -74,7 +74,7 @@ class PushWorker
             @sendPush registrationIds, notification, progress, resolve, reject
     catch error
       errorLog "Error while receiving new message: ", error
-      reject error
+      reject error.toString()
 
   sendPush: (registrationIds, notification, progress, resolve, reject) ->
     try
