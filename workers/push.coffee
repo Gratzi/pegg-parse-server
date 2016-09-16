@@ -13,7 +13,7 @@ Queue = require 'firebase-queue'
 
 GCM_API_KEY = process.env.GCM_API_KEY or fail "cannot have an empty GCM_API_KEY"
 APN_CERT_PASSPHRASE = process.env.APN_CERT_PASSPHRASE or fail "cannot have an empty APN_CERT_PASSPHRASE"
-APN_PEM = process.env.APN_PEM or fail "cannot have an empty APN_PEM"
+APN_P12 = process.env.APN_P12 or fail "cannot have an empty APN_P12"
 
 pushSettings =
   gcm:
@@ -31,7 +31,7 @@ pushSettings =
       expiry: 4 * 7 * 24 * 3600
       sound: 'ping.aiff'
     options: {
-      cert: APN_PEM
+      pfx: new Buffer APN_P12, 'base64'
       passphrase: APN_CERT_PASSPHRASE
     }
 
