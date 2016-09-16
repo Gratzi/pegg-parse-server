@@ -25,7 +25,7 @@ pushSettings =
       retries: 4
     options: {}
   apn:
-    gateway: 'gateway.sandbox.push.apple.com'
+    gateway: 'gateway.push.apple.com'
     badge: 1
     defaultData:
       expiry: 4 * 7 * 24 * 3600
