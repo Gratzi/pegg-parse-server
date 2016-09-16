@@ -74,7 +74,7 @@ class PushWorker
             @sendPush registrationIds, notification, progress, resolve, reject
     catch error
       errorLog "Error while receiving new message: ", error
-      reject error.toString()
+      reject JSON.stringify error
 
   sendPush: (registrationIds, notification, progress, resolve, reject) ->
     try
@@ -82,11 +82,11 @@ class PushWorker
       @push.send registrationIds, notification, (error, result) ->
         if error?
           errorLog error, { registrationIds }
-          reject error.toString()
+          reject JSON.stringify error
         else
           resolve()
     catch error
       errorLog "Error while sending push: ", error
-      reject error.toString()
+      reject JSON.stringify error
 
 module.exports = PushWorker
