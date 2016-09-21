@@ -177,7 +177,7 @@ updateBestieScore = (user, peggee, failCount, deck) ->
         bestie.set 'peggCounts', peggCounts
         bestie.set 'lastDeck', deck
         bestie.increment 'failCount', failCount
-        bestie.increment 'cards'
+        bestie.increment 'peggCount'
         bestie.save(null, { useMasterKey: true })
           .then => console.log "updateBestieScore: success -- #{JSON.stringify bestie}"
           .fail (err) => console.error "updateBestieScore: ERROR -- #{JSON.stringify bestie}"
@@ -187,7 +187,7 @@ updateBestieScore = (user, peggee, failCount, deck) ->
         newBestieAcl.setReadAccess user.id, true
         newBestie = new Parse.Object 'Bestie'
         newBestie.set 'failCount', failCount
-        newBestie.set 'cards', 1
+        newBestie.set 'peggCount', 1
         newBestie.set 'friend', peggee
         newBestie.set 'user', user
         newBestie.set 'lastDeck', deck
