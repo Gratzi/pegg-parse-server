@@ -14,6 +14,7 @@ Queue = require 'firebase-queue'
 GCM_API_KEY = process.env.GCM_API_KEY or fail "cannot have an empty GCM_API_KEY"
 APN_CERT_PASSPHRASE = process.env.APN_CERT_PASSPHRASE or fail "cannot have an empty APN_CERT_PASSPHRASE"
 APN_P12 = process.env.APN_P12 or fail "cannot have an empty APN_P12"
+APN_GATEWAY = process.env.APN_GATEWAY or fail "cannot have an empty APN_GATEWAY"
 
 pushSettings =
   gcm:
@@ -25,7 +26,7 @@ pushSettings =
       retries: 4
     options: {}
   apn:
-    gateway: 'gateway.push.apple.com'
+    gateway: APN_GATEWAY
     badge: 1
     defaultData:
       expiry: 4 * 7 * 24 * 3600
