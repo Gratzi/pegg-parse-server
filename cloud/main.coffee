@@ -110,10 +110,10 @@ Parse.Cloud.afterSave 'Pegg', (request) ->
 
     # Correct! Save stats and update Bestie Score
     if guess.id is answer.id
-      updatePrefStats user, card, pref, guess, true
+      updatePrefStats { user, card, pref, guess, failCount, correctAnswer: true }
       updateBestieScore user, peggee, failCount, deck
     else
-      updatePrefStats user, card, pref, guess, false
+      updatePrefStats { user, card, pref, guess, failCount, correctAnswer: false }
 
 Parse.Cloud.afterSave 'Pref', (request) ->
   pref = request.object
@@ -138,7 +138,7 @@ Parse.Cloud.afterSave 'UserPrivates', (request) ->
 
 ######### UPDATES #########
 
-updatePrefStats = (user, card, pref, guess, correctAnswer) ->
+updatePrefStats = ({ user, card, pref, guess, failCount, correctAnswer }) ->
   console.error "updatePrefStats:", pref
   token = user.getSessionToken()
   pref.fetch({sessionToken: token})
@@ -146,9 +146,11 @@ updatePrefStats = (user, card, pref, guess, correctAnswer) ->
     .then (pref) =>
       console.log "updatePrefStats: fetched pref -- #{JSON.stringify pref}"
       choices = pref.get('choices')
+      firstTry = failCount is 0
       if correctAnswer
         # UPDATE Pref with userId in hasPegged array
         pref.addUnique 'hasPegged', user.id
+      if firstTry
         if choices?
           choices[guess.id].peggCount++
           pref.set 'choices', choices
@@ -160,6 +162,7 @@ updatePrefStats = (user, card, pref, guess, correctAnswer) ->
               choices[guess.id].peggCount++
               pref.set 'choices', choices
               pref.save(null, { useMasterKey: true })
+      if correctAnswer or firstTry
         pref.save(null, { useMasterKey: true })
           .fail (err) => console.error "updatePrefStats: ERROR -- #{JSON.stringify err}"
           .then => console.log "updatePrefStats: success -- #{JSON.stringify pref}"
@@ -178,6 +181,8 @@ updateBestieScore = (user, peggee, failCount, deck) ->
         bestie.set 'lastDeck', deck
         bestie.increment 'failCount', failCount
         bestie.increment 'peggCount'
+        score = Math.round(( 1 - bestie.get('failCount') / (bestie.get('peggCount') + bestie.get('failCount'))) * 100)
+        bestie.set 'score', score
         bestie.save(null, { useMasterKey: true })
           .then => console.log "updateBestieScore: success -- #{JSON.stringify bestie}"
           .fail (err) => console.error "updateBestieScore: ERROR -- #{JSON.stringify bestie}"
@@ -194,6 +199,8 @@ updateBestieScore = (user, peggee, failCount, deck) ->
         peggCounts = {}
         if peggCounts[deck]? then peggCounts[deck]++ else peggCounts[deck] = 1
         newBestie.set 'peggCounts', peggCounts
+        score = Math.round(( 1 - newBestie.get('failCount') / (newBestie.get('peggCount') + newBestie.get('failCount'))) * 100)
+        newBestie.set 'score', score
         newBestie.set 'ACL', newBestieAcl
         newBestie.save(null, { useMasterKey: true })
           .then => console.log "updateBestieScore: success -- #{JSON.stringify newBestie}"
