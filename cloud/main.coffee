@@ -146,23 +146,23 @@ updatePrefStats = (user, card, pref, guess, correctAnswer) ->
     .then (pref) =>
       console.log "updatePrefStats: fetched pref -- #{JSON.stringify pref}"
       choices = pref.get('choices')
-      if choices?
-        choices[guess.id].peggCount++
-        pref.set 'choices', choices
-      else
-        # Sometimes choices don't get populated on Pref creation, not sure why
-        console.log "ERROR: aaaaarg choices should exist... refetching..."
-        getChoices(card)
-          .then (choices) =>
-            choices[guess.id].peggCount++
-            pref.set 'choices', choices
-            pref.save(null, { useMasterKey: true })
       if correctAnswer
-        # UPDATE Pref row(s) with userId in hasPegged array
+        # UPDATE Pref with userId in hasPegged array
         pref.addUnique 'hasPegged', user.id
-      pref.save(null, { useMasterKey: true })
-        .fail (err) => console.error "updatePrefStats: ERROR -- #{JSON.stringify err}"
-        .then => console.log "updatePrefStats: success -- #{JSON.stringify pref}"
+        if choices?
+          choices[guess.id].peggCount++
+          pref.set 'choices', choices
+        else
+          # Sometimes choices don't get populated on Pref creation, not sure why
+          console.log "ERROR: aaaaarg choices should exist... refetching..."
+          getChoices(card)
+            .then (choices) =>
+              choices[guess.id].peggCount++
+              pref.set 'choices', choices
+              pref.save(null, { useMasterKey: true })
+        pref.save(null, { useMasterKey: true })
+          .fail (err) => console.error "updatePrefStats: ERROR -- #{JSON.stringify err}"
+          .then => console.log "updatePrefStats: success -- #{JSON.stringify pref}"
 
 updateBestieScore = (user, peggee, failCount, deck) ->
   token = user.getSessionToken()
