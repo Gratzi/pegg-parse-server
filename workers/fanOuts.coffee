@@ -40,10 +40,11 @@ class FanOutsWorker
         @firebase.child("inbound/#{friendId}").push
           timestamp: data.timestamp
           type: 'friendsUpdate'
-          friendId: data.userId
+          userId: data.userId
       notified.push @firebase.child("inbound/#{data.userId}").push
         timestamp: data.timestamp
         type: 'friendsUpdate'
+        userId: data.userId
       Promise.when notified
         .fail (error) =>
           reject error
