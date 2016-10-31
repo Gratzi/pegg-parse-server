@@ -189,6 +189,7 @@ updateBestieScore = (user, peggee, failCount, deck) ->
       else
         newBestieAcl = new Parse.ACL()
         newBestieAcl.setRoleReadAccess "#{user.id}_Friends", true
+        newBestieAcl.setRoleReadAccess "#{peggee.id}_Friends", true
         newBestieAcl.setReadAccess user.id, true
         newBestie = new Parse.Object 'Bestie'
         newBestie.set 'failCount', failCount
