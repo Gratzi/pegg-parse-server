@@ -2,7 +2,6 @@ _ = require 'underscore'
 sha1 = require 'sha1'
 facebookImporter = require './facebookImporter'
 mailChimp = require './mailchimp'
-{makeObject, failHandler} = require './utils'
 FirebaseTokenGenerator = require 'firebase-token-generator'
 #Parse.Config.get()
 #  .then (configs) =>
@@ -16,6 +15,27 @@ Parse.Cloud.define "getFirebaseToken", (request, response) ->
   tokenGenerator = new FirebaseTokenGenerator FIREBASE_SECRET
   token = tokenGenerator.createToken {uid: request.user.id}, {expires: 2272147200}
   response.success token
+
+Parse.Cloud.define "error", (request, response) ->
+  body =
+    channel: '#errors'
+    username: 'PeggErrorBot'
+    icon_emoji: ':ghost:'
+    text: """
+      *User*: #{request.params.name} (#{request.params.id})
+      *UserAgent*: #{request.params.userAgent}
+      ```#{request.params.stack}```
+    """
+  Parse.Cloud.httpRequest
+    method: "POST"
+    headers:
+      "Content-Type": "application/json"
+    url: 'https://hooks.slack.com/services/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'
+    body: body
+  .catch (error) =>
+    response.error error
+  .then (res) =>
+    response.success res
 
 Parse.Cloud.define "addFriend", (request, response) ->
   userId = request.user.id
