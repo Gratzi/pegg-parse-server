@@ -25,6 +25,7 @@ MailChimp =
         merge_vars:
           FNAME: args.firstName
           LNAME: args.lastName
+        double_optin: false # Facebook already verified their email is valid.
       url = "https://#{SERVER}.api.mailchimp.com/2.0/lists/subscribe.json"
 
       Parse.Cloud.httpRequest
