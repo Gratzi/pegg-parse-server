@@ -38,4 +38,23 @@ MailChimp =
           console.error 'Request failed with response code ' + httpResponse.status
           console.error httpResponse.text
 
+  updateEmail: (args) =>
+    if !args or !args.oldEmail or !args.newEmail
+      console.log 'Must supply old email address, and new email address'
+      return
+
+    MailChimp.initialize().then =>
+      mailchimpData =
+        apikey: MAILCHIMP_API_KEY
+        id: PEGG_LIST_ID
+        email: email: args.oldEmail
+        merge_vars:
+          "new-email": args.newEmail
+      url = "https://#{SERVER}.api.mailchimp.com/2.0/lists/update-member.json"
+
+      Parse.Cloud.httpRequest
+        method: 'POST'
+        url: url
+        body: JSON.stringify(mailchimpData)
+
 module.exports = MailChimp
