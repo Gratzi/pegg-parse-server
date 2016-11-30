@@ -41,7 +41,7 @@ Parse.Cloud.define "feedback", (request, response) ->
   body =
     channel: '#feedback'
     username: request.params.name
-    icon_emoji: ':ghost:'
+    icon_emoji: ':unicorn_face:'
     text: """
       *UserId*: #{request.params.id}
       *UserAgent*: #{request.params.userAgent}
