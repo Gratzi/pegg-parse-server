@@ -37,6 +37,28 @@ Parse.Cloud.define "error", (request, response) ->
   .then (res) =>
     response.success res
 
+Parse.Cloud.define "feedback", (request, response) ->
+  body =
+    channel: '#feedback'
+    username: request.params.name
+    icon_emoji: ':ghost:'
+    text: """
+      *UserId*: #{request.params.id}
+      *UserAgent*: #{request.params.userAgent}
+      *SentFrom*: #{request.params.sentFrom}
+      ```#{request.params.feedback}```
+    """
+  Parse.Cloud.httpRequest
+    method: "POST"
+    headers:
+      "Content-Type": "application/json"
+    url: 'https://hooks.slack.com/services/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'
+    body: body
+  .catch (error) =>
+    response.error error
+  .then (res) =>
+    response.success res
+
 Parse.Cloud.define "addFriend", (request, response) ->
   userId = request.user.id
   friendId = request.params.friendId
