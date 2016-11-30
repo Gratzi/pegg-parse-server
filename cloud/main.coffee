@@ -18,12 +18,12 @@ Parse.Cloud.define "getFirebaseToken", (request, response) ->
 
 Parse.Cloud.define "updateEmail", (request, response) ->
   mailChimp.updateEmail {oldEmail: request.params.oldEmail, newEmail: request.params.newEmail}
-  .then (httpResponse) =>
+  .then (res) =>
     console.log "Email udpated: #{request.params.oldEmail} -> #{request.params.newEmail}"
-    response.success httpResponse.text
-  .catch (httpResponse) =>
-    console.error 'Request failed with response code ' + httpResponse.status
-    response.error httpResponse.status + " - " + httpResponse.text
+    response.success res
+  .catch (error) =>
+    console.error 'Request failed with: ' + error
+    response.error error
 
 Parse.Cloud.define "error", (request, response) ->
   body =
