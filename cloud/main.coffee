@@ -45,7 +45,7 @@ Parse.Cloud.define "feedback", (request, response) ->
     text: """
       *UserId*: #{request.params.id}
       *UserAgent*: #{request.params.userAgent}
-      *SentFrom*: #{request.params.sentFrom}
+      *Context*: #{request.params.context}
       ```#{request.params.feedback}```
     """
   Parse.Cloud.httpRequest
