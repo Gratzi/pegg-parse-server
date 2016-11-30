@@ -44,6 +44,7 @@ Parse.Cloud.define "feedback", (request, response) ->
     icon_emoji: ':unicorn_face:'
     text: """
       *UserId*: #{request.params.id}
+      *Email*: #{request.params.email}
       *UserAgent*: #{request.params.userAgent}
       *Context*: #{request.params.context}
       ```#{request.params.feedback}```
