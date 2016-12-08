@@ -37,11 +37,11 @@ class FanOutsWorker
     try
       log "fanning out friendsUpdate notifications", data
       notified = for friendId in data.friends
-        @firebase.child("inbound/#{friendId}").push
+        @firebase.child("inbound/#{friendId}/#{data.userId}").push
           timestamp: data.timestamp
           type: 'friendsUpdate'
           userId: data.userId
-      notified.push @firebase.child("inbound/#{data.userId}").push
+      notified.push @firebase.child("inbound/#{data.userId}/#{data.userId}").push
         timestamp: data.timestamp
         type: 'friendsUpdate'
         userId: data.userId
