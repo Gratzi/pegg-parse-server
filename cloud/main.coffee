@@ -159,11 +159,12 @@ Parse.Cloud.afterSave 'Pegg', (request) ->
     question = request.object.get 'question'
     failCount = request.object.get 'failCount'
     deck = request.object.get 'deck'
+    levelFailCount = request.object.get 'levelFailCount'
 
     # Correct! Save stats and update Bestie Score
     if guess.id is answer.id
       updatePrefStats { user, card, pref, guess, failCount, correctAnswer: true }
-      updateBestieScore user, peggee, failCount, deck
+      updateBestieScore user, peggee, failCount, deck, levelFailCount
     else
       updatePrefStats { user, card, pref, guess, failCount, correctAnswer: false }
 
@@ -219,7 +220,7 @@ updatePrefStats = ({ user, card, pref, guess, failCount, correctAnswer }) ->
           .fail (err) => console.error "updatePrefStats: ERROR -- #{JSON.stringify err}"
           .then => console.log "updatePrefStats: success -- #{JSON.stringify pref}"
 
-updateBestieScore = (user, peggee, failCount, deck) ->
+updateBestieScore = (user, peggee, failCount, deck, levelFailCount) ->
   token = user.getSessionToken()
   bestieQuery = new Parse.Query 'Bestie'
   bestieQuery.equalTo 'friend', peggee
@@ -235,6 +236,7 @@ updateBestieScore = (user, peggee, failCount, deck) ->
         bestie.increment 'peggCount'
         score = Math.round(( 1 - bestie.get('failCount') / (bestie.get('peggCount') + bestie.get('failCount'))) * 100)
         bestie.set 'score', score
+        bestie.set 'levelFailCount', levelFailCount
         bestie.save(null, { useMasterKey: true })
           .then => console.log "updateBestieScore: success -- #{JSON.stringify bestie}"
           .fail (err) => console.error "updateBestieScore: ERROR -- #{JSON.stringify bestie}"
@@ -254,6 +256,7 @@ updateBestieScore = (user, peggee, failCount, deck) ->
         newBestie.set 'peggCounts', peggCounts
         score = Math.round(( 1 - newBestie.get('failCount') / (newBestie.get('peggCount') + newBestie.get('failCount'))) * 100)
         newBestie.set 'score', score
+        newBestie.set 'levelFailCount', levelFailCount
         newBestie.set 'ACL', newBestieAcl
         newBestie.save(null, { useMasterKey: true })
           .then => console.log "updateBestieScore: success -- #{JSON.stringify newBestie}"
