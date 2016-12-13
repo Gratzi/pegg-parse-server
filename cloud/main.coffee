@@ -175,8 +175,8 @@ Parse.Cloud.afterSave 'Pref', (request) ->
   answer = request.object.get 'answer'
   deck = request.object.get 'deck'
   question = request.object.get 'question'
-  updateCardHasPreffed user, card # updates hasPreffed on Card
   if !pref.existed() # if new object
+    updateCardHasPreffed user, card # updates hasPreffed on Card
     incrementChoiceCount answer.id, 'prefCount' # what's the most popular preference?
 
 Parse.Cloud.afterSave 'UserPrivates', (request) ->
