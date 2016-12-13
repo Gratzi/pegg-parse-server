@@ -236,7 +236,7 @@ updateBestieScore = (user, peggee, failCount, deck, levelFailCount) ->
         bestie.increment 'peggCount'
         score = Math.round(( 1 - bestie.get('failCount') / (bestie.get('peggCount') + bestie.get('failCount'))) * 100)
         bestie.set 'score', score
-        bestie.set 'levelFailCount', levelFailCount
+        bestie.set 'levelFailCount', levelFailCount or 0
         bestie.save(null, { useMasterKey: true })
           .then => console.log "updateBestieScore: success -- #{JSON.stringify bestie}"
           .fail (err) => console.error "updateBestieScore: ERROR -- #{JSON.stringify bestie}"
@@ -256,7 +256,7 @@ updateBestieScore = (user, peggee, failCount, deck, levelFailCount) ->
         newBestie.set 'peggCounts', peggCounts
         score = Math.round(( 1 - newBestie.get('failCount') / (newBestie.get('peggCount') + newBestie.get('failCount'))) * 100)
         newBestie.set 'score', score
-        newBestie.set 'levelFailCount', levelFailCount
+        newBestie.set 'levelFailCount', levelFailCount or 0
         newBestie.set 'ACL', newBestieAcl
         newBestie.save(null, { useMasterKey: true })
           .then => console.log "updateBestieScore: success -- #{JSON.stringify newBestie}"
