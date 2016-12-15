@@ -17,6 +17,8 @@ Parse.Cloud.define "getFirebaseToken", (request, response) ->
   response.success token
 
 Parse.Cloud.define "updateEmail", (request, response) ->
+  throw new Error "OMG I'm so crashing errrrrrrrrrrp splat."
+
   mailChimp.updateEmail {oldEmail: request.params.oldEmail, newEmail: request.params.newEmail}
   .then (res) =>
     console.log "Email udpated: #{request.params.oldEmail} -> #{request.params.newEmail}"
