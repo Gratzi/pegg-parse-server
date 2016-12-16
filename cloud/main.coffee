@@ -1,4 +1,4 @@
-throw new Error "OMG I'm so crashing errrrrrrrrrrp splat."
+throw new Error "I'm so crashing errrrrrrrrrrp splat."
 
 _ = require 'underscore'
 sha1 = require 'sha1'
