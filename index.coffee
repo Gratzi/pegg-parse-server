@@ -13,6 +13,7 @@ uncaughtException = (err) =>
     text: "```#{err.stack}```"
   , (err, response) =>
     if err? then console.error "Error posting error to Slack #errors. Fail sauce.", err
+    process.exit 1
 
 try
   require 'newrelic'
@@ -78,4 +79,3 @@ try
   ParseServer.createLiveQueryServer httpServer
 catch err
   uncaughtException err
-  process.exit 1
