@@ -1,3 +1,9 @@
+require 'newrelic'
+require('dotenv').config()
+express = require 'express'
+path = require 'path'
+ParseServer = require('parse-server').ParseServer
+
 # Report uncaught errors to Slack #errors
 Slack = require 'slack-node'
 slack = new Slack()
@@ -18,16 +24,7 @@ process.on 'uncaughtException', (err) =>
   uncaughtException err
   process.exit 1
 
-uncaughtException new Error "testing emergency broadcast system..."
-
-# Example express application adding the parse-server module to expose Parse
-# compatible API routes.
-# require 'newrelic'
-require('dotenv').config()
-express = require 'express'
-path = require 'path'
-ParseServer = require('parse-server').ParseServer
-
+# Set up Parse server
 databaseUri = process.env.DATABASE_URI or process.env.MONGODB_URI
 
 if !databaseUri
@@ -73,13 +70,13 @@ app.get '/', (req, res) ->
 app.use (err, req, res, next) =>
   if err?
     uncaughtException err
-app.on 'error', uncaughtException
-app.on 'clientError', uncaughtException
+# app.on 'error', uncaughtException
+# app.on 'clientError', uncaughtException
 
 port = process.env.PORT or 1337
 httpServer = require('http').createServer(app)
-httpServer.on 'error', uncaughtException
-httpServer.on 'clientError', uncaughtException
+# httpServer.on 'error', uncaughtException
+# httpServer.on 'clientError', uncaughtException
 httpServer.listen port, ->
   console.log 'pegg-parse-server running on port ' + port + '.'
 
