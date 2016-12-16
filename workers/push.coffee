@@ -76,9 +76,10 @@ class PushWorker
       log "sending push: ", notification
       @push.send registrationIds, notification, (error, result) ->
         if error?
-          errorLog error, { registrationIds }
+          errorLog "Error while sending push: ", error, { registrationIds }
           reject JSON.stringify error
         else
+          log "Sending push successful:", result
           resolve()
     catch error
       errorLog "Error while sending push: ", error
