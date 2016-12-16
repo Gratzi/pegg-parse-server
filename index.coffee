@@ -7,21 +7,6 @@ path = require 'path'
 ParseServer = require('parse-server').ParseServer
 Slack = require 'slack-node'
 
-slack = new Slack()
-slack.setWebhook 'https://hooks.slack.com/services/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'
-
-process.on 'uncaughtException', (error) =>
-  console.error "OMG uncaught internal server error.", error.stack
-  slack.webhook
-    channel: "#errors"
-    username: 'PeggErrorBot'
-    icon_emoji: ":ghost:"
-    title: "Parse Server Critical Error"
-    text: "```#{error.stack}```"
-  , (error, response) =>
-    if error? then console.error "Error posting error to Slack #errors. Fail sauce.", error
-  process.exit 1
-
 databaseUri = process.env.DATABASE_URI or process.env.MONGODB_URI
 
 if !databaseUri
@@ -46,6 +31,29 @@ Parse.Promise.disableAPlusCompliant()
 # If you wish you require them, you can set them as options in the initialization above:
 # javascriptKey, restAPIKey, dotNetKey, clientKey
 app = express()
+
+# Report uncaught errors to Slack #errors
+slack = new Slack()
+slack.setWebhook 'https://hooks.slack.com/services/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'
+
+uncaughtException = (err) =>
+  console.error "OMG uncaught internal server error.", err.stack
+  slack.webhook
+    channel: "#errors"
+    username: 'PeggErrorBot'
+    icon_emoji: ":ghost:"
+    title: "Parse Server Critical Error"
+    text: "```#{err.stack}```"
+  , (err, response) =>
+    if err? then console.error "Error posting error to Slack #errors. Fail sauce.", err
+
+process.on 'uncaughtException', (err) =>
+  uncaughtException err
+  process.exit 1
+
+app.use (err, req, res, next) =>
+  if err?
+    uncaughtException err
 
 # Serve static assets from the /public folder
 app.use '/public', express.static(path.join(__dirname, '/public'))
