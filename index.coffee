@@ -67,16 +67,13 @@ app.get '/', (req, res) ->
 #   res.sendFile path.join(__dirname, '/public/test.html')
 
 # Report uncaught errors to Slack #errors
+# NOTE: This must come last or it won't work.
 app.use (err, req, res, next) =>
   if err?
     uncaughtException err
-# app.on 'error', uncaughtException
-# app.on 'clientError', uncaughtException
 
 port = process.env.PORT or 1337
 httpServer = require('http').createServer(app)
-# httpServer.on 'error', uncaughtException
-# httpServer.on 'clientError', uncaughtException
 httpServer.listen port, ->
   console.log 'pegg-parse-server running on port ' + port + '.'
 
