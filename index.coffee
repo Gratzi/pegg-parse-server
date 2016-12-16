@@ -18,9 +18,11 @@ process.on 'uncaughtException', (err) =>
   uncaughtException err
   process.exit 1
 
+uncaughtException new Error "testing emergency broadcast system..."
+
 # Example express application adding the parse-server module to expose Parse
 # compatible API routes.
-require 'newrelic'
+# require 'newrelic'
 require('dotenv').config()
 express = require 'express'
 path = require 'path'
