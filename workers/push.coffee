@@ -24,9 +24,7 @@ pushSettings =
 
 pushDefaults =
   delayWhileIdle: false
-  timeToLive: 4 * 7 * 24 * 3600
   retries: 4
-  expiry: 4 * 7 * 24 * 3600
   sound: 'ping.aiff'
 
 class PushWorker
