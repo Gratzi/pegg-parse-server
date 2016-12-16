@@ -55,7 +55,7 @@ class PushWorker
     notification = _.merge notification, pushDefaults
     # log "new message received", notification
     try
-      receiver = notification.data.receiver
+      receiver = notification.custom.receiver
       if receiver?
         @registrationIdsChannel.child(receiver).once 'value', (registrationsSnapshot) =>
           registrations = registrationsSnapshot.val()
