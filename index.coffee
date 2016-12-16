@@ -1,9 +1,3 @@
-require 'newrelic'
-require('dotenv').config()
-express = require 'express'
-path = require 'path'
-ParseServer = require('parse-server').ParseServer
-
 # Report uncaught errors to Slack #errors
 Slack = require 'slack-node'
 slack = new Slack()
@@ -23,6 +17,14 @@ uncaughtException = (err) =>
 process.on 'uncaughtException', (err) =>
   uncaughtException err
   process.exit 1
+
+throw "ARRRRRRRRRG"
+
+require 'newrelic'
+require('dotenv').config()
+express = require 'express'
+path = require 'path'
+ParseServer = require('parse-server').ParseServer
 
 # Set up Parse server
 databaseUri = process.env.DATABASE_URI or process.env.MONGODB_URI
