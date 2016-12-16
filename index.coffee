@@ -5,6 +5,24 @@ require('dotenv').config()
 express = require('express')
 ParseServer = require('parse-server').ParseServer
 path = require('path')
+Slack = require 'slack-node'
+
+slack = new Slack()
+slack.setWebhook 'https://hooks.slack.com/services/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'
+ 
+
+process.on 'uncaughtException', (error) =>
+  console.error error.stack
+  slack.webhook
+    channel: "#errors"
+    username: 'PeggErrorBot'
+    icon_emoji: ":ghost:"
+    title: "Parse Server Critical Error"
+    text: "```#{error.stack}```"
+  , (error, response) =>
+    if error? then console.error "Error posting error to Slack #errors. Fail sauce.", error
+  process.exit 1
+
 databaseUri = process.env.DATABASE_URI or process.env.MONGODB_URI
 
 if !databaseUri
