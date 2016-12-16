@@ -1,3 +1,23 @@
+# Report uncaught errors to Slack #errors
+Slack = require 'slack-node'
+slack = new Slack()
+slack.setWebhook 'https://hooks.slack.com/services/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'
+
+uncaughtException = (err) =>
+  console.error "OMG uncaught internal server error.", err.stack
+  slack.webhook
+    channel: "#errors"
+    username: 'PeggErrorBot'
+    icon_emoji: ":ghost:"
+    title: "Parse Server Critical Error"
+    text: "```#{err.stack}```"
+  , (err, response) =>
+    if err? then console.error "Error posting error to Slack #errors. Fail sauce.", err
+
+process.on 'uncaughtException', (err) =>
+  uncaughtException err
+  process.exit 1
+
 # Example express application adding the parse-server module to expose Parse
 # compatible API routes.
 require 'newrelic'
@@ -5,7 +25,6 @@ require('dotenv').config()
 express = require 'express'
 path = require 'path'
 ParseServer = require('parse-server').ParseServer
-Slack = require 'slack-node'
 
 databaseUri = process.env.DATABASE_URI or process.env.MONGODB_URI
 
@@ -33,24 +52,6 @@ Parse.Promise.disableAPlusCompliant()
 app = express()
 
 # Report uncaught errors to Slack #errors
-slack = new Slack()
-slack.setWebhook 'https://hooks.slack.com/services/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'
-
-uncaughtException = (err) =>
-  console.error "OMG uncaught internal server error.", err.stack
-  slack.webhook
-    channel: "#errors"
-    username: 'PeggErrorBot'
-    icon_emoji: ":ghost:"
-    title: "Parse Server Critical Error"
-    text: "```#{err.stack}```"
-  , (err, response) =>
-    if err? then console.error "Error posting error to Slack #errors. Fail sauce.", err
-
-process.on 'uncaughtException', (err) =>
-  uncaughtException err
-  process.exit 1
-
 app.use (err, req, res, next) =>
   if err?
     uncaughtException err
