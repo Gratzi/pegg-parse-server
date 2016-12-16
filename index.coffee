@@ -53,11 +53,6 @@ Parse.Promise.disableAPlusCompliant()
 # javascriptKey, restAPIKey, dotNetKey, clientKey
 app = express()
 
-# Report uncaught errors to Slack #errors
-app.use (err, req, res, next) =>
-  if err?
-    uncaughtException err
-
 # Serve static assets from the /public folder
 app.use '/public', express.static(path.join(__dirname, '/public'))
 
@@ -74,8 +69,17 @@ app.get '/', (req, res) ->
 # app.get '/test', (req, res) ->
 #   res.sendFile path.join(__dirname, '/public/test.html')
 
+# Report uncaught errors to Slack #errors
+app.use (err, req, res, next) =>
+  if err?
+    uncaughtException err
+app.on 'error', uncaughtException
+app.on 'clientError', uncaughtException
+
 port = process.env.PORT or 1337
 httpServer = require('http').createServer(app)
+httpServer.on 'error', uncaughtException
+httpServer.on 'clientError', uncaughtException
 httpServer.listen port, ->
   console.log 'pegg-parse-server running on port ' + port + '.'
 
