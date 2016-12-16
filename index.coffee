@@ -1,18 +1,17 @@
 # Example express application adding the parse-server module to expose Parse
 # compatible API routes.
-require('newrelic')
+require 'newrelic'
 require('dotenv').config()
-express = require('express')
+express = require 'express'
+path = require 'path'
 ParseServer = require('parse-server').ParseServer
-path = require('path')
 Slack = require 'slack-node'
 
 slack = new Slack()
 slack.setWebhook 'https://hooks.slack.com/services/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'
- 
 
 process.on 'uncaughtException', (error) =>
-  console.error error.stack
+  console.error "OMG uncaught internal server error.", error.stack
   slack.webhook
     channel: "#errors"
     username: 'PeggErrorBot'
