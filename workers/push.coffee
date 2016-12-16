@@ -79,7 +79,7 @@ class PushWorker
           errorLog "Error while sending push: ", error, { registrationIds }
           reject JSON.stringify error
         else
-          log "Sending push successful:", result
+          log "Sending push successful:", JSON.stringify result, null, 2
           resolve()
     catch error
       errorLog "Error while sending push: ", error
