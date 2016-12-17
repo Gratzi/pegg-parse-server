@@ -10,7 +10,7 @@ exports.config = {
   /**
    * Array of application names.
    */
-  app_name: ['Pegg-' + process.env.PEGG_ENV],
+  app_name: ['Pegg-' + process.env.NODE_ENV],
   /**
    * Your New Relic license key.
    */
