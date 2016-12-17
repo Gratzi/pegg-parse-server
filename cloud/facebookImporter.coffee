@@ -20,9 +20,6 @@ class FacebookImporter
     @response = response
     @user = request.user
 
-    # XXX this shouldn't be necessary if we call functions with useMasterKey: true
-    # It's a bug: https://developers.facebook.com/bugs/306759706140811/
-    # It's fixed in the latest JS SDK version
     @getFbFriends()
       .then @getPeggUsersFromFbFriends
       .then @updateUserFriends
