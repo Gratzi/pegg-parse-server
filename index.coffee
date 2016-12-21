@@ -3,17 +3,18 @@ Slack = require 'slack-node'
 slack = new Slack()
 slack.setWebhook 'https://hooks.slack.com/services/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'
 
-uncaughtException = (err) =>
-  console.error "OMG uncaught internal server error.", JSON.stringify err
+uncaughtException = (err, exit = false) =>
+  logMessage = if err.stack? then err.stack else JSON.stringify err
+  console.error "OMG uncaught internal server error.", logMessage
   slack.webhook
     channel: "#errors"
     username: 'PeggErrorBot'
     icon_emoji: ":ghost:"
     title: "Parse Server Critical Error"
-    text: "```#{err.stack}```"
+    text: "```#{logMessage}```"
   , (err, response) =>
     if err? then console.error "Error posting error to Slack #errors. Fail sauce.", err
-    process.exit 1
+    if exit? then process.exit 1
 
 try
   require 'newrelic'
@@ -67,8 +68,7 @@ try
   # Report uncaught errors to Slack #errors
   # NOTE: This must come last or it won't work.
   app.use (err, req, res, next) =>
-    if err?
-      uncaughtException err
+    if err? then uncaughtException err
 
   port = process.env.PORT or 1337
   httpServer = require('http').createServer(app)
@@ -78,4 +78,4 @@ try
   # This will enable the Live Query real-time server
   ParseServer.createLiveQueryServer httpServer
 catch err
-  uncaughtException err
+  uncaughtException err, true
