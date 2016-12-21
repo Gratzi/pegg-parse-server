@@ -4,7 +4,7 @@ slack = new Slack()
 slack.setWebhook 'https://hooks.slack.com/services/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'
 
 uncaughtException = (err) =>
-  console.error "OMG uncaught internal server error.", err.stack
+  console.error "OMG uncaught internal server error.", JSON.stringify err
   slack.webhook
     channel: "#errors"
     username: 'PeggErrorBot'
