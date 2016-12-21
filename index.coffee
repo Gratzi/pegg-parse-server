@@ -14,7 +14,7 @@ uncaughtException = (err, exit = false) =>
     text: "```#{logMessage}```"
   , (err, response) =>
     if err? then console.error "Error posting error to Slack #errors. Fail sauce.", err
-    if exit? then process.exit 1
+    if exit then process.exit 1
 
 try
   require 'newrelic'
