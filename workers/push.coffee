@@ -31,10 +31,8 @@ pushSettings =
     defaultData:
       expiry: 4 * 7 * 24 * 3600
       sound: 'ping.aiff'
-    options: {
-      pfx: new Buffer APN_P12, 'base64'
-      passphrase: APN_CERT_PASSPHRASE
-    }
+    pfx: new Buffer APN_P12, 'base64'
+    passphrase: APN_CERT_PASSPHRASE
 
 class PushWorker
   constructor: (@firebase) ->
