@@ -7,7 +7,7 @@ slack.setWebhook 'https://hooks.slack.com/services/T03C5G90X/B3307HQEM/5aHkSFrew
 
 uncaughtException = (err, exit = false) =>
   # There are some errors we really don't care about. Filter them out.
-  supressedCodes = PEGG_SUPPRESS_ERROR_CODES
+  supressedCodes = process.env.PEGG_SUPPRESS_ERROR_CODES
     .split ','
     .map (code) => parseInt code
   return if supressedCodes.includes err.code
