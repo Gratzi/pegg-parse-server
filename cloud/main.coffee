@@ -26,49 +26,56 @@ Parse.Cloud.define "updateEmail", (request, response) ->
     response.error error
 
 Parse.Cloud.define "error", (request, response) ->
-  body =
-    channel: '#errors'
-    username: 'PeggErrorBot'
-    icon_emoji: ':ghost:'
-    text: """
-      *User*: #{request.params.user.name} (#{request.params.user.id})
-      *UserAgent*: #{request.params.userAgent}
-      ```#{request.params.error.stack}```
-    """
-  # TODO Use slack.webhook instead. See uncaughtException() in index.coffee. Unify error handling code between these two places.
-  Parse.Cloud.httpRequest
-    method: "POST"
-    headers:
-      "Content-Type": "application/json"
-    url: 'https://hooks.slack.com/services/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'
-    body: body
-  .catch (error) =>
-    response.error error
-  .then (res) =>
-    response.success res
+  if request.params?
+    request.params.user ?=
+      name: "Unknown user"
+      id: "Unknown ID"
+    request.params.error ?=
+      stack: "Unknown error"
+    body =
+      channel: '#errors'
+      username: 'PeggErrorBot'
+      icon_emoji: ':ghost:'
+      text: """
+        *User*: #{request.params.user.name} (#{request.params.user.id})
+        *UserAgent*: #{request.params.userAgent}
+        ```#{request.params.error.stack}```
+      """
+    # TODO Use slack.webhook instead. See uncaughtException() in index.coffee. Unify error handling code between these two places.
+    Parse.Cloud.httpRequest
+      method: "POST"
+      headers:
+        "Content-Type": "application/json"
+      url: 'https://hooks.slack.com/services/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'
+      body: body
+    .catch (error) =>
+      response.error error
+    .then (res) =>
+      response.success res
 
 Parse.Cloud.define "feedback", (request, response) ->
-  body =
-    channel: '#feedback'
-    username: request.params.name
-    icon_emoji: ':unicorn_face:'
-    text: """
-      *UserId*: #{request.params.id}
-      *Email*: #{request.params.email}
-      *UserAgent*: #{request.params.userAgent}
-      *Context*: #{request.params.context}
-      ```#{request.params.feedback}```
-    """
-  Parse.Cloud.httpRequest
-    method: "POST"
-    headers:
-      "Content-Type": "application/json"
-    url: 'https://hooks.slack.com/services/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'
-    body: body
-  .catch (error) =>
-    response.error error
-  .then (res) =>
-    response.success res
+  if request.params?
+    body =
+      channel: '#feedback'
+      username: request.params.name
+      icon_emoji: ':unicorn_face:'
+      text: """
+        *UserId*: #{request.params.id}
+        *Email*: #{request.params.email}
+        *UserAgent*: #{request.params.userAgent}
+        *Context*: #{request.params.context}
+        ```#{request.params.feedback}```
+      """
+    Parse.Cloud.httpRequest
+      method: "POST"
+      headers:
+        "Content-Type": "application/json"
+      url: 'https://hooks.slack.com/services/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'
+      body: body
+    .catch (error) =>
+      response.error error
+    .then (res) =>
+      response.success res
 
 Parse.Cloud.define "addFriend", (request, response) ->
   userId = request.user.id
