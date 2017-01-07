@@ -31,10 +31,11 @@ Parse.Cloud.define "error", (request, response) ->
     username: 'PeggErrorBot'
     icon_emoji: ':ghost:'
     text: """
-      *User*: #{request.params.name} (#{request.params.id})
+      *User*: #{request.params.user.name} (#{request.params.user.id})
       *UserAgent*: #{request.params.userAgent}
-      ```#{request.params.stack}```
+      ```#{request.params.error.stack}```
     """
+  # TODO Use slack.webhook instead. See uncaughtException() in index.coffee. Unify error handling code between these two places.
   Parse.Cloud.httpRequest
     method: "POST"
     headers:
