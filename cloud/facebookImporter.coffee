@@ -1,6 +1,5 @@
 _ = require 'underscore'
-Firebase = require 'firebase'
-{makeObject, failHandler} = require './utils'
+Firebase = require '../lib/firebase'
 debug = require 'debug'
 log = debug 'pegg:facebookImporter:log'
 errorLog = debug 'pegg:facebookImporter:error'
@@ -9,9 +8,6 @@ fail = (err) ->
     err = new Error err
   errorLog err
   throw err
-
-FIREBASE_SECRET = process.env.FIREBASE_SECRET or fail "cannot have an empty FIREBASE_SECRET"
-FIREBASE_DATABASE_URL = process.env.FIREBASE_DATABASE_URL or fail "cannot have an empty FIREBASE_DATABASE_URL"
 
 class FacebookImporter
   start: (request, response) =>
@@ -60,20 +56,10 @@ class FacebookImporter
         @peggFriends = res
 
   sendFirebaseNotifications: =>
-    firebase = new Firebase FIREBASE_DATABASE_URL
-    firebase.authWithCustomToken FIREBASE_SECRET, (error, authData) =>
-      if error?
-        errorLog "Firebase login failed!", error
-        throw error
-      else
-        log "logged into Firebase"
-        fanOutsChannel = firebase.child 'fanOuts/tasks'
-        # if @isNewUser
-        peggFriendIds = _.map @peggFriends, (friend) -> friend.id
-        fanOutsChannel.push
-          userId: @user.id
-          timestamp: @user.get('createdAt').valueOf()
-          friends: peggFriendIds
+    Firebase.fanOut
+      userId: @user.id
+      friendIds: _.map @peggFriends, (friend) -> friend.id
+      timestamp: @user.get('createdAt').valueOf()
 
   updateUserFriends: =>
     privatesQuery = new Parse.Query 'UserPrivates'

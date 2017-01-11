@@ -8,6 +8,7 @@ fail = (err) ->
   errorLog err
   throw err
 
+Firebase = require '../lib/firebase'
 PushNotifications = require 'node-pushnotifications'
 Queue = require 'firebase-queue'
 
@@ -37,28 +38,29 @@ pushSettings =
     }
 
 class PushWorker
-  constructor: (@firebase) ->
+  constructor: ->
     @push = new PushNotifications pushSettings
-    @registrationIdsChannel = @firebase.child 'registrationIds'
-    @pushChannel = @firebase.child 'push'
-    options =
-      # Without a spec defined, spec defaults to:
-      #
-      # "default_spec": {
-      #   "start_state": null,
-      #   "in_progress_state": "in_progress",
-      #   "finished_state": null,
-      #   "error_state": "error",
-      #   "timeout": 300000, // 5 minutes
-      #   "retries": 0 // don't retry
-      # }
-      #
-      # https://github.com/firebase/firebase-queue/blob/master/docs/guide.md#defining-specs-optional
-      # specId: 'spec'
-      sanitize: false
-      numWorkers: 5
-    queue = new Queue @pushChannel, options, @newMessage
-    log "initialized"
+    Firebase.getRef().then (firebase) =>
+      @registrationIdsChannel = firebase.child 'registrationIds'
+      @pushChannel = firebase.child 'push'
+      options =
+        # Without a spec defined, spec defaults to:
+        #
+        # "default_spec": {
+        #   "start_state": null,
+        #   "in_progress_state": "in_progress",
+        #   "finished_state": null,
+        #   "error_state": "error",
+        #   "timeout": 300000, // 5 minutes
+        #   "retries": 0 // don't retry
+        # }
+        #
+        # https://github.com/firebase/firebase-queue/blob/master/docs/guide.md#defining-specs-optional
+        # specId: 'spec'
+        sanitize: false
+        numWorkers: 5
+      queue = new Queue @pushChannel, options, @newMessage
+      log "initialized"
 
   newMessage: (notification, progress, resolve, reject) =>
     # log "new message received", notification

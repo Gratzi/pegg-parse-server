@@ -13,7 +13,7 @@
     "debug": "^2.2.0",
     "dotenv": "^2.0.0",
     "express": "~4.11.x",
-    "firebase": "2.x.x",
+    "firebase": "2.4.2",
     "firebase-queue": "^1.4.0",
     "firebase-token-generator": "^2.0.0",
     "foreman": "^1.4.1",

@@ -2,7 +2,7 @@ _ = require 'underscore'
 sha1 = require 'sha1'
 facebookImporter = require './facebookImporter'
 mailChimp = require './mailchimp'
-FirebaseTokenGenerator = require 'firebase-token-generator'
+Firebase = require '../lib/firebase'
 #Parse.Config.get()
 #  .then (configs) =>
 
@@ -11,10 +11,7 @@ FirebaseTokenGenerator = require 'firebase-token-generator'
 Parse.Cloud.define "importFriends", facebookImporter.start
 
 Parse.Cloud.define "getFirebaseToken", (request, response) ->
-  FIREBASE_SECRET = process.env.FIREBASE_SECRET or throw new Error "cannot have an empty FIREBASE_SECRET"
-  tokenGenerator = new FirebaseTokenGenerator FIREBASE_SECRET
-  token = tokenGenerator.createToken {uid: request.user.id}, {expires: 2272147200}
-  response.success token
+  response.success Firebase.getToken userId: request.user.id
 
 Parse.Cloud.define "updateEmail", (request, response) ->
   mailChimp.updateEmail {oldEmail: request.params.oldEmail, newEmail: request.params.newEmail}
@@ -88,6 +85,10 @@ Parse.Cloud.define "addFriend", (request, response) ->
     forwardPromise
     backwardPromise
   ).then =>
+    Firebase.fanOut
+      userId: userId
+      friendIds: [friendId]
+      timestamp: Date.now()
     response.success 'New friend added successfully.'
   , (error) =>
     response.error error

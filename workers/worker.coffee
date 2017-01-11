@@ -9,17 +9,7 @@ fail = (err) ->
 
 PushWorker = require './push'
 FanOutsWorker = require './fanOuts'
-Firebase = require 'firebase'
+Firebase = require '../lib/firebase'
 
-FIREBASE_SECRET = process.env.FIREBASE_SECRET or fail "cannot have an empty FIREBASE_SECRET"
-FIREBASE_DATABASE_URL = process.env.FIREBASE_DATABASE_URL or fail "cannot have an empty FIREBASE_DATABASE_URL"
-
-firebase = new Firebase FIREBASE_DATABASE_URL
-firebase.authWithCustomToken FIREBASE_SECRET, (error, authData) =>
-  if error?
-    errorLog "Firebase login failed!", error
-    throw error
-  else
-    log "firebase login succeeded"
-    push = new PushWorker firebase
-    fanOuts = new FanOutsWorker firebase
+push = new PushWorker()
+fanOuts = new FanOutsWorker()
