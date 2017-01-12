@@ -39,15 +39,20 @@ class FanOutsWorker
     try
       log "fanning out friendsUpdate notifications", data
       Firebase.getRef().then (firebase) =>
+        # push a notification to each friend
         notified = for friendId in data.friendIds
           firebase.child("inbound/#{friendId}").push
             timestamp: data.timestamp
             type: 'friendsUpdate'
             userId: data.userId
+            friendId: friendId
+        # push a notification to ourself
         notified.push firebase.child("inbound/#{data.userId}").push
           timestamp: data.timestamp
           type: 'friendsUpdate'
           userId: data.userId
+          friendIds: data.friendIds
+        # wait until they're all sent
         Promise.when notified
           .fail (error) =>
             reject error
