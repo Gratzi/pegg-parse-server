@@ -202,10 +202,11 @@ Parse.Cloud.afterSave 'UserPrivates', (request) ->
 ######### UPDATES #########
 
 updateUserScore = ({ user, failCount }) ->
-  user.fetch({ useMasterKey: true })
+  token = user.getSessionToken()
+  user.fetch({sessionToken: token})
   .then (user) =>
     user.increment 'peggPoints', 10 - failCount * 3
-    user.save()
+    user.save(null, {sessionToken: token})
 
 updatePrefStats = ({ user, card, pref, guess, failCount, correctAnswer }) ->
   console.error "updatePrefStats:", pref
