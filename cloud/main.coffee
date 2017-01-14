@@ -172,6 +172,7 @@ Parse.Cloud.afterSave 'Pegg', (request) ->
 
     # Correct! Save stats and update Bestie Score
     if guess.id is answer.id
+      updateUserScore { user, failCount }
       updatePrefStats { user, card, pref, guess, failCount, correctAnswer: true }
       updateBestieScore user, peggee, failCount, deck, levelFailCount
     else
@@ -199,6 +200,12 @@ Parse.Cloud.afterSave 'UserPrivates', (request) ->
     mailChimp.subscribe {email, firstName, lastName}
 
 ######### UPDATES #########
+
+updateUserScore = ({ user, failCount }) ->
+  user.fetch({ useMasterKey: true })
+  .then (user) =>
+    user.increment 'peggPoints', 10 - failCount * 3
+    user.save()
 
 updatePrefStats = ({ user, card, pref, guess, failCount, correctAnswer }) ->
   console.error "updatePrefStats:", pref
