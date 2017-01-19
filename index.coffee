@@ -2,7 +2,8 @@ require('dotenv').config()
 Utils = require './lib/utils'
 
 try
-  require 'newrelic'
+  unless process.env.PEGG_ENV is 'dev'
+    require 'newrelic'
   express = require 'express'
   path = require 'path'
   ParseServer = require('parse-server').ParseServer

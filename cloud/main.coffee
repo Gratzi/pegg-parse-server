@@ -1,10 +1,8 @@
 _ = require 'underscore'
 sha1 = require 'sha1'
 facebookImporter = require './facebookImporter'
-mailChimp = require './mailchimp'
+sendInBlue = require './sendInBlue'
 Firebase = require '../lib/firebase'
-#Parse.Config.get()
-#  .then (configs) =>
 
 ######### CLOUD FUNCTIONS #########
 
@@ -14,13 +12,16 @@ Parse.Cloud.define "getFirebaseToken", (request, response) ->
   response.success Firebase.getToken userId: request.user.id
 
 Parse.Cloud.define "updateEmail", (request, response) ->
-  mailChimp.updateEmail {oldEmail: request.params.oldEmail, newEmail: request.params.newEmail}
+  email = request.params.newEmail
+  firstName = request.params.firstName
+  lastName = request.params.lastName
+  sendInBlue.createOrUpdate {email, firstName, lastName}
   .then (res) =>
-    console.log "Email udpated: #{request.params.oldEmail} -> #{request.params.newEmail}"
-    response.success res
-  .catch (error) =>
-    console.error 'Request failed with: ' + error
-    response.error error
+    sendInBlue.delete email: request.params.oldEmail
+  .then (res) =>
+    response.success "Updated email address successfully"
+  .fail (err) =>
+    response.error err
 
 Parse.Cloud.define "error", (request, response) ->
   if request.params?
@@ -196,8 +197,10 @@ Parse.Cloud.afterSave 'UserPrivates', (request) ->
     email = userPrivates.get 'email'
     firstName = userPrivates.get 'firstName'
     lastName = userPrivates.get 'lastName'
-    console.log "subscribing to MailChimp:", JSON.stringify {email, firstName, lastName}
-    mailChimp.subscribe {email, firstName, lastName}
+    console.log "subscribing to SendInBlue:", JSON.stringify {email, firstName, lastName}
+    sendInBlue.createOrUpdate {email, firstName, lastName}
+    .then (res) =>
+      console.log res
 
 ######### UPDATES #########
 
@@ -205,7 +208,7 @@ updateUserScore = ({ user, failCount }) ->
   token = user.getSessionToken()
   user.fetch({sessionToken: token})
   .then (user) =>
-    user.increment 'peggPoints', 10 - failCount * 3
+    user.increment 'peggPoints', 10 - failCount * 3 # 10, 7, 4, 1
     user.save(null, {sessionToken: token})
 
 updatePrefStats = ({ user, card, pref, guess, failCount, correctAnswer }) ->
@@ -256,7 +259,7 @@ updateBestieScore = (user, peggee, failCount, deck, levelFailCount) ->
         bestie.set 'levelFailCount', levelFailCount or 0
         bestie.save(null, { useMasterKey: true })
           .then => console.log "updateBestieScore: success -- #{JSON.stringify bestie}"
-          .fail (err) => console.error "updateBestieScore: ERROR -- #{JSON.stringify bestie}"
+          .fail (err) => console.error "updateBestieScore: ERROR -- #{JSON.stringify bestie}", err
       else
         newBestieAcl = new Parse.ACL()
         newBestieAcl.setRoleReadAccess "#{user.id}_Friends", true
@@ -277,7 +280,7 @@ updateBestieScore = (user, peggee, failCount, deck, levelFailCount) ->
         newBestie.set 'ACL', newBestieAcl
         newBestie.save(null, { useMasterKey: true })
           .then => console.log "updateBestieScore: success -- #{JSON.stringify newBestie}"
-          .fail (err) => console.error "updateBestieScore: ERROR -- #{JSON.stringify newBestie}"
+          .fail (err) => console.error "updateBestieScore: ERROR -- #{JSON.stringify newBestie}", err
 
 updateCardHasPreffed = (user, card) ->
   token = user.getSessionToken()
