@@ -13,7 +13,7 @@ class Utils
   # Report uncaught errors to Slack #errors
   slackError: (err, exit = false) =>
     # There are some errors we really don't care about. Filter them out.
-    supressedCodes = process.env.PEGG_SUPPRESS_ERROR_CODES or ''
+    supressedCodes = (process.env.PEGG_SUPPRESS_ERROR_CODES or ' ')
       .split ','
       .map (code) => parseInt code
     return if supressedCodes.includes err.code
