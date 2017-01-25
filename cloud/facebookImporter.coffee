@@ -56,10 +56,11 @@ class FacebookImporter
         @peggFriends = res
 
   sendFirebaseNotifications: =>
-    Firebase.fanOut
-      userId: @user.id
-      friendIds: _.map @peggFriends, (friend) -> friend.id
-      timestamp: @user.get('createdAt').valueOf()
+    if @peggFriends.length > 0
+      Firebase.fanOut
+        userId: @user.id
+        friendIds: _.map @peggFriends, (friend) -> friend.id
+        timestamp: @user.get('createdAt').valueOf()
 
   updateUserFriends: =>
     privatesQuery = new Parse.Query 'UserPrivates'
@@ -140,21 +141,22 @@ class FacebookImporter
     promise
 
   updateBackwardPermissions: =>
-    friendRoles = []
-    # ADD user to friends' roles
-    for friend in @peggFriends
-      friendRoles.push "#{friend.id}_FacebookFriends"
-    log friendRoles
+    if @peggFriends.length > 0
+      friendRoles = []
+      # ADD user to friends' roles
+      for friend in @peggFriends
+        friendRoles.push "#{friend.id}_FacebookFriends"
+      log friendRoles
 
-    query = new Parse.Query Parse.Role
-    query.containedIn 'name', friendRoles
-    query.find({ useMasterKey: true })
-      .then (results) =>
-        for fbFriendsRole in results
-          relation = fbFriendsRole.getUsers()
-          relation.add @user
-          log "updating friend role: ", fbFriendsRole, relation
-          fbFriendsRole.save(null, { useMasterKey: true })
+      query = new Parse.Query Parse.Role
+      query.containedIn 'name', friendRoles
+      query.find({ useMasterKey: true })
+        .then (results) =>
+          for fbFriendsRole in results
+            relation = fbFriendsRole.getUsers()
+            relation.add @user
+            log "updating friend role: ", fbFriendsRole, relation
+            fbFriendsRole.save(null, { useMasterKey: true })
 
   finish: =>
     message = "Updated #{@user.get 'first_name'}'s friends from Facebook (Pegg user id #{@user.id})"
