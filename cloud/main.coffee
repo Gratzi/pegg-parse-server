@@ -173,7 +173,6 @@ Parse.Cloud.afterSave 'Pegg', (request) ->
 
     # Correct! Save stats and update Bestie Score
     if guess.id is answer.id
-      updateUserScore { user, failCount }
       updatePrefStats { user, card, pref, guess, failCount, correctAnswer: true }
       updateBestieScore user, peggee, failCount, deck, levelFailCount
     else
@@ -203,13 +202,6 @@ Parse.Cloud.afterSave 'UserPrivates', (request) ->
       console.log res
 
 ######### UPDATES #########
-
-updateUserScore = ({ user, failCount }) ->
-  token = user.getSessionToken()
-  user.fetch({sessionToken: token})
-  .then (user) =>
-    user.increment 'peggPoints', 10 - failCount * 3 # 10, 7, 4, 1
-    user.save(null, {sessionToken: token})
 
 updatePrefStats = ({ user, card, pref, guess, failCount, correctAnswer }) ->
   console.error "updatePrefStats:", pref
