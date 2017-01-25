@@ -151,29 +151,22 @@ Parse.Cloud.afterSave '_User', (request) ->
   user.fetch({ useMasterKey: true })
   .then (user) =>
     if !user.existed()
-      # Create friend role for a email/pass login (non FB)
       facebookId = user.get 'facebook_id'
       if !facebookId?
+      # Create friend role for a email/pass login (non FB)
         roleName = "#{user.id}_Friends"
         console.log "creating role", roleName
         roleAcl = new Parse.ACL()
         role = new Parse.Role roleName, roleAcl
-        role.save(null, { useMasterKey: true })
+        # add Cosmic to User's friend role
+        relation = role.getUsers()
+        query = new Parse.Query Parse.User
+        query.equalTo "objectId", 'A2UBfjj8n9'
+        query.first({ useMasterKey: true })
+        .then (friend) =>
+          relation.add friend
+          role.save(null, { useMasterKey: true })
 
-      # add Cosmic to User's friend role
-      userRoleName = "#{user.id}_Friends"
-      query = new Parse.Query Parse.Role
-      query.equalTo "name", userRoleName
-      query.first({ useMasterKey: true })
-      .then (userRole) =>
-        if userRole?
-          relation = userRole.getUsers()
-          query = new Parse.Query Parse.User
-          query.equalTo "objectId", 'A2UBfjj8n9'
-          query.first({ useMasterKey: true })
-          .then (friend) =>
-            relation.add friend
-            userRole.save(null, { useMasterKey: true })
 
 Parse.Cloud.afterSave 'Pegg', (request) ->
   user = request.user
@@ -219,7 +212,6 @@ Parse.Cloud.afterSave 'UserPrivates', (request) ->
       console.log res
 
 ######### UPDATES #########
-
 updatePrefStats = ({ user, card, pref, guess, failCount, correctAnswer }) ->
   console.error "updatePrefStats:", pref
   token = user.getSessionToken()
@@ -322,24 +314,6 @@ getChoices = (card) ->
       else
         return null
 
-incrementCardCount = (cardId, fieldName) ->
-  cardQuery = new Parse.Query 'Card'
-  cardQuery.equalTo 'objectId', cardId
-  cardQuery.first({ useMasterKey: true })
-    .then (result) =>
-      if result?
-        result.increment fieldName, 1
-        result.save(null, { useMasterKey: true })
-
-decrementCardCount = (cardId, fieldName) ->
-  cardQuery = new Parse.Query 'Card'
-  cardQuery.equalTo 'objectId', cardId
-  cardQuery.first({ useMasterKey: true })
-    .then (result) =>
-      if result?
-        result.increment fieldName, -1
-        result.save(null, { useMasterKey: true })
-
 incrementChoiceCount = (choiceId, fieldName) ->
   choiceQuery = new Parse.Query 'Choice'
   choiceQuery.equalTo 'objectId', choiceId
@@ -347,13 +321,4 @@ incrementChoiceCount = (choiceId, fieldName) ->
     .then (result) =>
       if result?
         result.increment fieldName, 1
-        result.save(null, { useMasterKey: true })
-
-decrementChoiceCount = (choiceId, fieldName) ->
-  choiceQuery = new Parse.Query 'Choice'
-  choiceQuery.equalTo 'objectId', choiceId
-  choiceQuery.first({ useMasterKey: true })
-    .then (result) =>
-      if result?
-        result.increment fieldName, -1
         result.save(null, { useMasterKey: true })
