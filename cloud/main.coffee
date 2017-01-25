@@ -149,14 +149,31 @@ Parse.Cloud.define "addFriend", (request, response) ->
 Parse.Cloud.afterSave '_User', (request) ->
   user = request.object
   user.fetch({ useMasterKey: true })
-    .then (user) =>
+  .then (user) =>
+    if !user.existed()
+      # Create friend role for a email/pass login (non FB)
       facebookId = user.get 'facebook_id'
-      if !user.existed() and !facebookId?
+      if !facebookId?
         roleName = "#{user.id}_Friends"
         console.log "creating role", roleName
         roleAcl = new Parse.ACL()
         role = new Parse.Role roleName, roleAcl
         role.save(null, { useMasterKey: true })
+
+      # add Cosmic to User's friend role
+      userRoleName = "#{user.id}_Friends"
+      query = new Parse.Query Parse.Role
+      query.equalTo "name", userRoleName
+      query.first({ useMasterKey: true })
+      .then (userRole) =>
+        if userRole?
+          relation = userRole.getUsers()
+          query = new Parse.Query Parse.User
+          query.equalTo "objectId", 'A2UBfjj8n9'
+          query.first({ useMasterKey: true })
+          .then (friend) =>
+            relation.add friend
+            userRole.save(null, { useMasterKey: true })
 
 Parse.Cloud.afterSave 'Pegg', (request) ->
   user = request.user
