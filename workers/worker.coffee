@@ -7,9 +7,9 @@ fail = (err) ->
   errorLog err
   throw err
 
+Firebase = require '../lib/firebase'
 PushWorker = require './push'
 FanOutsWorker = require './fanOuts'
-Firebase = require '../lib/firebase'
 
 push = new PushWorker()
 fanOuts = new FanOutsWorker()

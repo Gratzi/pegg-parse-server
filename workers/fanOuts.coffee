@@ -14,6 +14,7 @@ Promise = require('parse').Promise
 
 class FanOutsWorker
   constructor: ->
+    log "FanOutsWorker initializing..."
     Firebase.getRef().then (firebase) =>
       @fanOutsChannel = firebase.child 'fanOuts'
       options =
@@ -33,7 +34,7 @@ class FanOutsWorker
         # sanitize: false
         numWorkers: 5
       queue = new Queue @fanOutsChannel, options, @fanOut
-      log "initialized"
+      log "FanOutsWorker initialized"
 
   fanOut: (data, progress, resolve, reject) =>
     try

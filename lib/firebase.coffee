@@ -17,6 +17,7 @@ FIREBASE_DATABASE_URL = process.env.FIREBASE_DATABASE_URL or fail "cannot have a
 class PeggFirebase
 
   constructor: ->
+    log "Initializing Firebase..."
     @_ready = new Promise
     @_firebaseRef = new Firebase FIREBASE_DATABASE_URL
     @_firebaseRef.authWithCustomToken FIREBASE_SECRET, (error, authData) =>
