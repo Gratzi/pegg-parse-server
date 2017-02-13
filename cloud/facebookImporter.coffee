@@ -98,14 +98,7 @@ class FacebookImporter
                     parentACL = new Parse.ACL()
                     parentRole = new Parse.Role parentRoleName, parentACL
                     parentRole.getRoles().add fbFriendsRole
-                    # Add Cosmic to User's friend role
-                    relation = parentRole.getUsers()
-                    query = new Parse.Query Parse.User
-                    query.equalTo "objectId", 'A2UBfjj8n9'
-                    query.first({ useMasterKey: true })
-                      .then (friend) =>
-                        relation.add friend
-                        parentRole.save(null, { useMasterKey: true })
+                    parentRole.save(null, { useMasterKey: true })
                       .fail (error) => errorLog "100", error
                     # add that role to the user record
                     currUserAcl = new Parse.ACL @user

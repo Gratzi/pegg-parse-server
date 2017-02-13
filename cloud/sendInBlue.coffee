@@ -22,8 +22,8 @@ SendInBlue =
     promise
 
   createOrUpdate: (args) =>
-    if !args or !args.email or !args.firstName or !args.lastName
-      console.log 'Must supply email address, firstname and lastname to SendInBlue createUpdate'
+    if !args or !args.email or !args.firstName
+      console.log 'Must supply email address, firstname to SendInBlue createUpdate'
       return
 
     promise = new Parse.Promise()

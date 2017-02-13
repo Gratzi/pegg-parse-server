@@ -53,12 +53,13 @@ Parse.Cloud.define "error", (request, response) ->
 
 Parse.Cloud.define "feedback", (request, response) ->
   if request.params?
+    friendId = request.params.id
     body =
       channel: '#feedback'
       username: request.params.name
       icon_emoji: ':unicorn_face:'
       text: """
-        *UserId*: #{request.params.id}
+        *UserId*: #{friendId}
         *Email*: #{request.params.email}
         *UserAgent*: #{request.params.userAgent}
         *Context*: #{request.params.context}
@@ -74,6 +75,22 @@ Parse.Cloud.define "feedback", (request, response) ->
       response.error error
     .then (res) =>
       response.success res
+
+    # add cosmic unicorn to user's friend role
+    roleQuery = new Parse.Query Parse.Role
+    roleQuery.equalTo 'name', "#{friendId}_Friends"
+    getUserPromise = roleQuery.first({ useMasterKey: true })
+    cosmicQuery = new Parse.Query Parse.User
+    cosmicQuery.equalTo 'objectId', 'A2UBfjj8n9'
+    getCosmicPromise = cosmicQuery.first({ useMasterKey: true })
+    Parse.Promise.when(getUserPromise, getCosmicPromise)
+    .then (userRole, cosmicUser) =>
+      if userRole? and cosmicUser?
+        relation = userRole.getUsers()
+        relation.add cosmicUser
+        userRole.save(null, { useMasterKey: true })
+    .fail (error) =>
+      console.error "56", error
 
 Parse.Cloud.define "addFriend", (request, response) ->
   userId = request.user.id
@@ -104,14 +121,14 @@ Parse.Cloud.define "addFriend", (request, response) ->
         relation = friendRole.getUsers()
         user = request.user
         user.fetch({ useMasterKey: true })
-          .then (user) =>
-            relation.add user
-            friendRole.save(null, { useMasterKey: true })
-              .then =>
-                forwardPromise.resolve()
-              .fail (error) =>
-                forwardPromise.reject error
-                console.error "52", error
+        .then (user) =>
+          relation.add user
+          friendRole.save(null, { useMasterKey: true })
+            .then =>
+              forwardPromise.resolve()
+            .fail (error) =>
+              forwardPromise.reject error
+              console.error "52", error
       else
         forwardPromise.reject "friend role missing: #{friendId}_Friends"
     .fail (error) =>
@@ -123,25 +140,25 @@ Parse.Cloud.define "addFriend", (request, response) ->
   query = new Parse.Query Parse.Role
   query.equalTo "name", userRoleName
   query.first({ useMasterKey: true })
-    .then (userRole) =>
-      if userRole?
-        relation = userRole.getUsers()
-        query = new Parse.Query Parse.User
-        query.equalTo "objectId", friendId
-        query.first({ useMasterKey: true })
-          .then (friend) =>
-            relation.add friend
-            userRole.save(null, { useMasterKey: true })
-            .then =>
-              backwardPromise.resolve()
-            .fail (error) =>
-              backwardPromise.reject error
-              console.error "75", error
-      else
-        backwardPromise.reject "user role missing: #{userId}_Friends"
-    .fail (error) =>
-      console.error "79", error
-      backwardPromise.reject error
+  .then (userRole) =>
+    if userRole?
+      relation = userRole.getUsers()
+      query = new Parse.Query Parse.User
+      query.equalTo "objectId", friendId
+      query.first({ useMasterKey: true })
+      .then (friend) =>
+        relation.add friend
+        userRole.save(null, { useMasterKey: true })
+        .then =>
+          backwardPromise.resolve()
+        .fail (error) =>
+          backwardPromise.reject error
+          console.error "75", error
+    else
+      backwardPromise.reject "user role missing: #{userId}_Friends"
+  .fail (error) =>
+    console.error "79", error
+    backwardPromise.reject error
 
 
 ######### AFTER SAVE, DELETE, ETC #########
@@ -158,15 +175,7 @@ Parse.Cloud.afterSave '_User', (request) ->
         console.log "creating role", roleName
         roleAcl = new Parse.ACL()
         role = new Parse.Role roleName, roleAcl
-        # add Cosmic to User's friend role
-        relation = role.getUsers()
-        query = new Parse.Query Parse.User
-        query.equalTo "objectId", 'A2UBfjj8n9'
-        query.first({ useMasterKey: true })
-        .then (friend) =>
-          relation.add friend
-          role.save(null, { useMasterKey: true })
-
+        role.save(null, { useMasterKey: true })
 
 Parse.Cloud.afterSave 'Pegg', (request) ->
   user = request.user
