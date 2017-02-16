@@ -6,7 +6,16 @@ Firebase = require '../lib/firebase'
 
 ######### CLOUD FUNCTIONS #########
 
-Parse.Cloud.define "importFriends", facebookImporter.start
+Parse.Cloud.define "importFriends", (request, response) ->
+  fbi = new facebookImporter
+  fbi.start request.user
+  .then =>
+    message = "Updated #{request.user.get 'first_name'}'s friends from Facebook (Pegg user id #{request.user.id})"
+    response.success message
+  .fail (error) ->
+    error.stack = new Error().stack
+    errorLog "24", error
+    response.error error
 
 Parse.Cloud.define "getFirebaseToken", (request, response) ->
   response.success Firebase.getToken userId: request.user.id

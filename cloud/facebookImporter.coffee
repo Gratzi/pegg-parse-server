@@ -3,163 +3,161 @@ Firebase = require '../lib/firebase'
 debug = require 'debug'
 log = debug 'pegg:facebookImporter:log'
 errorLog = debug 'pegg:facebookImporter:error'
-fail = (err) ->
-  if typeof err is 'string'
-    err = new Error err
-  errorLog err
-  throw err
 
 class FacebookImporter
-  start: (request, response) =>
-    log "new user? :: #{JSON.stringify request.params}"
-    @isNewUser = request.params.newUser
-    @response = response
-    @user = request.user
-
+  start: (@user) =>
     @getFbFriends()
-      .then @getPeggUsersFromFbFriends
-      .then @updateUserFriends
-      .then @updateForwardPermissions
-      .then @updateBackwardPermissions
-      .then @sendFirebaseNotifications
-      .then @finish
-      .fail (error) ->
-        error.stack = new Error().stack
-        errorLog "24", error
-        response.error error
+    .then @getPeggUsersFromFbFriends
+    .then @updateForwardPermissions
+    .then @updateBackwardPermissions
+    .then @sendFirebaseNotifications
 
   getFbFriends: =>
+    log "getFbFriends"
     query = new Parse.Query Parse.User
     query.equalTo 'objectId', @user.id
     query.first({ useMasterKey: true })
-      .then (@user) =>
-        authData = @user.get 'authData'
-        token = authData.facebook.access_token
-        url = "https://graph.facebook.com/me/friends?fields=id&access_token=" + token
-        @_getFbFriends url, []
+    .then (@user) =>
+      authData = @user.get 'authData'
+      token = authData.facebook.access_token
+      url = "https://graph.facebook.com/me/friends?fields=id&access_token=" + token
+      @_getFbFriends url, []
 
-  _getFbFriends: (url, friends) =>
+  _getFbFriends: (url, fbFriends) =>
+#    log "_getFbFriends", url, fbFriends
     Parse.Cloud.httpRequest url: url
-      .then (results) =>
-        friends = friends.concat(results.data.data)
-        if results.data.paging and results.data.paging.next
-          @_getFbFriends results.data.paging.next, friends
-        else
-          @fbFriends = friends
+    .then (results) =>
+      fbFriends = fbFriends.concat(results.data.data)
+      if results.data.paging and results.data.paging.next
+        @_getFbFriends results.data.paging.next, fbFriends
+      else
+        fbFriends
 
-  getPeggUsersFromFbFriends: =>
-    @friendsArray = _.map @fbFriends, (friend) => friend.id
+  getPeggUsersFromFbFriends: (fbFriends) =>
+    log "getPeggUsersFromFbFriends", fbFriends
+    fbFriendsArray = _.map fbFriends, (friend) => friend.id
+    @_updateUserFriends fbFriendsArray
     query = new Parse.Query Parse.User
-    query.containedIn "facebook_id", @friendsArray
+    query.containedIn "facebook_id", fbFriendsArray
     query.find({ useMasterKey: true })
-      .then (res) =>
-        @peggFriends = res
 
-  sendFirebaseNotifications: =>
-    if @peggFriends.length > 0
-      Firebase.fanOut
-        userId: @user.id
-        friendIds: _.map @peggFriends, (friend) -> friend.id
-        timestamp: @user.get('createdAt').valueOf()
-
-  updateUserFriends: =>
+  _updateUserFriends: (fbFriendsArray) =>
+#    log "_updateUserFriends", fbFriendsArray
     privatesQuery = new Parse.Query 'UserPrivates'
-    log 'SAVING USER PRIVATES: ' + @user.id
     privatesQuery.equalTo 'user', @user
     privatesQuery.first({ useMasterKey: true })
-      .then (res) =>
-        res.set 'friends', fbIds: @friendsArray
-        res.save(null, { useMasterKey: true })
+    .then (res) =>
+      res.set 'friends', fbIds: fbFriendsArray
+      res.save(null, { useMasterKey: true })
 
-  updateForwardPermissions: =>
-    # TODO: refactor this function, it is a MONSTOR
+  updateForwardPermissions: (peggFriends) =>
+    log "updateForwardPermissions", peggFriends
     promise = new Parse.Promise()
+    @_getFacebookFriendsRole()
+    .then (fbFriendsRole) =>
+      unless fbFriendsRole?
+        @_createFacebookFriendsRole peggFriends
+        .then (fbFriendsRole) =>
+          @_createParentFriendRole fbFriendsRole
+          # updateBackwardPermissions needs _FacebookFriends role to exist, but can continue without the parent role
+          promise.resolve peggFriends
+        .fail (error) =>
+          errorLog "100", error
+          promise.reject error
+      else
+        @_updateFacebookFriendsRole fbFriendsRole, peggFriends
+        .then ->
+          promise.resolve peggFriends
+        .fail (error) =>
+          errorLog "100", error
+          promise.reject error
+    promise
 
-    # ADD friends to user's Role
+  _getFacebookFriendsRole: =>
+#    log "_getFacebookFriendsRole"
     query = new Parse.Query Parse.Role
     fbFriendsRoleName = "#{@user.id}_FacebookFriends"
     query.equalTo "name", fbFriendsRoleName
+    query.first({ useMasterKey: true })
+
+  _createFacebookFriendsRole: (peggFriends) =>
+    # create a role that lists user's friends from Facebook
+#    log "_createFacebookFriendsRole", peggFriends
+    fbFriendsRoleName = "#{@user.id}_FacebookFriends"
+    fbFriendsRole = new Parse.Role fbFriendsRoleName, new Parse.ACL()
+    if peggFriends.length > 0
+      fbFriendsRole.getUsers().add peggFriends
+    fbFriendsRole.save(null, { useMasterKey: true })
+
+  _createParentFriendRole: (fbFriendsRole) =>
+#    log "_createParentFriendRole", fbFriendsRole
+    parentRoleName = "#{@user.id}_Friends"
+    query = new Parse.Query Parse.Role
+    query.equalTo "name", parentRoleName
     query.find({ useMasterKey: true })
-      .then (results) =>
-        if results.length is 0
-          # create a role that lists user's friends from Facebook
-          fbFriendsRole = new Parse.Role fbFriendsRoleName, new Parse.ACL()
-          if @peggFriends.length > 0
-            fbFriendsRole.getUsers().add @peggFriends
-          fbFriendsRole.save(null, { useMasterKey: true })
-            .then =>
-              promise.resolve() # updateBackwardPermissions needs fbFriendsRole to exist, but can continue without the rest of this
-              parentRoleName = "#{@user.id}_Friends"
-              query.equalTo "name", parentRoleName
-              query.find({ useMasterKey: true })
-                .then (results) =>
-                  if results.length is 0
-                    # create a role that can see user's cards
-                    parentACL = new Parse.ACL()
-                    parentRole = new Parse.Role parentRoleName, parentACL
-                    parentRole.getRoles().add fbFriendsRole
-                    parentRole.save(null, { useMasterKey: true })
-                      .fail (error) => errorLog "100", error
-                    # add that role to the user record
-                    currUserAcl = new Parse.ACL @user
-                    currUserAcl.setRoleReadAccess "#{@user.id}_Friends", true
-                    @user.set 'ACL', currUserAcl
-                    @user.save(null, { useMasterKey: true })
-                      .fail (error) => errorLog "100", error
-                  else
-                    parentRole = results[0]
-                    parentRole.getRoles().add fbFriendsRole
-                    parentRole.save(null, { useMasterKey: true })
-                      .fail (error) => errorLog "100", error
-            .fail (error) =>
-              errorLog "100", error
-              promise.reject error
-        else if results.length is 1
-          # role exists, just need to update friends list
-          fbFriendsRole = results[0]
-          relation = fbFriendsRole.getUsers()
-          # dump old friends
-          query = relation.query()
-          query.find({ useMasterKey: true })
-            .then (friends) =>
-              relation.remove friends
-            .fail (error) =>
-              errorLog "112", error
-              promise.reject error
-          # add current friends
-          if @peggFriends.length > 0
-            relation.add @peggFriends
-          log "updating user role: ", fbFriendsRole, relation
-          fbFriendsRole.save(null, { useMasterKey: true })
-          promise.resolve()
-        else
-          promise.reject "Something went wrong. There should only be one role called #{fbFriendsRoleName}, but we have #{results.length} of them."
+    .then (results) =>
+      if results.length is 0
+        # create a role that can see user's cards
+        parentACL = new Parse.ACL()
+        parentRole = new Parse.Role parentRoleName, parentACL
+        parentRole.getRoles().add fbFriendsRole
+        parentRole.save(null, { useMasterKey: true })
+        .fail (error) => errorLog "100", error
+        # add that role to the user record
+        currUserAcl = new Parse.ACL @user
+        currUserAcl.setRoleReadAccess "#{@user.id}_Friends", true
+        @user.set 'ACL', currUserAcl
+        @user.save(null, { useMasterKey: true })
+      else
+        parentRole = results[0]
+        parentRole.getRoles().add fbFriendsRole
+        parentRole.save(null, { useMasterKey: true })
 
-      .fail (error) =>
-        errorLog "123", error
-        promise.reject error
-    promise
+  _updateFacebookFriendsRole: (fbFriendsRole, peggFriends) =>
+#    log "_updateFacebookFriendsRole", fbFriendsRole, peggFriends
+    relation = fbFriendsRole.getUsers()
+    query = relation.query()
+    query.find({ useMasterKey: true })
+    .then (friends) =>
+      # dump old friends
+      relation.remove friends
+      # add current friends
+      if peggFriends.length > 0
+        relation.add peggFriends
+      fbFriendsRole.save(null, { useMasterKey: true })
 
-  updateBackwardPermissions: =>
-    if @peggFriends.length > 0
+  updateBackwardPermissions: (peggFriends) =>
+    log "updateBackwardPermissions", peggFriends
+    promise = new Parse.Promise()
+    if peggFriends.length > 0
       friendRoles = []
       # ADD user to friends' roles
-      for friend in @peggFriends
+      for friend in peggFriends
         friendRoles.push "#{friend.id}_FacebookFriends"
-      log friendRoles
-
+#      log friendRoles
       query = new Parse.Query Parse.Role
       query.containedIn 'name', friendRoles
       query.find({ useMasterKey: true })
-        .then (results) =>
-          for fbFriendsRole in results
-            relation = fbFriendsRole.getUsers()
-            relation.add @user
-            log "updating friend role: ", fbFriendsRole, relation
-            fbFriendsRole.save(null, { useMasterKey: true })
+      .then (results) =>
+        for fbFriendsRole in results
+          relation = fbFriendsRole.getUsers()
+          relation.add @user
+#          log "updating friend role: ", fbFriendsRole, relation
+          fbFriendsRole.save(null, { useMasterKey: true })
+        promise.resolve peggFriends
+      .fail (error) =>
+        errorLog "100", error
+        promise.reject error
+    promise
 
-  finish: =>
-    message = "Updated #{@user.get 'first_name'}'s friends from Facebook (Pegg user id #{@user.id})"
-    @response.success message
+  sendFirebaseNotifications: (peggFriends) =>
+    log "sendFirebaseNotifications", peggFriends
+    promise = new Parse.Promise()
+    if peggFriends.length > 0
+      Firebase.fanOut
+        userId: @user.id
+        friendIds: _.map peggFriends, (friend) -> friend.id
+        timestamp: @user.get('createdAt').valueOf()
+    promise.resolve()
 
-module.exports = new FacebookImporter
+module.exports = FacebookImporter
