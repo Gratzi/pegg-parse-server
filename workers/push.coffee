@@ -28,7 +28,7 @@ pushSettings =
     options: {}
   apn:
     gateway: APN_GATEWAY
-    badge: 1
+    badge: 0
     defaultData:
       expiry: 4 * 7 * 24 * 3600
       sound: 'ping.aiff'
