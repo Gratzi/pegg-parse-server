@@ -46,6 +46,7 @@ Parse.Cloud.define "error", (request, response) ->
       text: """
         *User*: #{request.params.user.name} (#{request.params.user.id})
         *UserAgent*: #{request.params.userAgent}
+        ```#{request.params.error.message}```
         ```#{request.params.error.stack}```
       """
     # TODO Use slack.webhook instead. See uncaughtException() in index.coffee. Unify error handling code between these two places.
