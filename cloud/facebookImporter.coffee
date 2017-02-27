@@ -19,9 +19,9 @@ class FacebookImporter
     query.first({ useMasterKey: true })
     .then (@user) =>
       authData = @user.get 'authData'
-      token = authData.facebook.access_token
-      url = "https://graph.facebook.com/me/friends?fields=id&access_token=" + token
-      @_getFbFriends url, []
+      if authData?.facebook?.access_token
+        url = "https://graph.facebook.com/me/friends?fields=id&access_token=" + authData.facebook.access_token
+        @_getFbFriends url, []
 
   _getFbFriends: (url, fbFriends) =>
 #    log "_getFbFriends", url, fbFriends

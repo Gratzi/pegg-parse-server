@@ -14,7 +14,6 @@ Parse.Cloud.define "importFriends", (request, response) ->
     response.success message
   .fail (error) ->
     error.stack = new Error().stack
-    errorLog "24", error
     response.error error
 
 Parse.Cloud.define "getFirebaseToken", (request, response) ->
