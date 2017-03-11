@@ -198,11 +198,14 @@ Parse.Cloud.afterSave 'Pegg', (request) ->
     failCount = request.object.get 'failCount'
     deck = request.object.get 'deck'
     levelFailCount = request.object.get 'levelFailCount'
+    levelCardsRemaining = request.object.get 'levelCardsRemaining'
 
     # Correct! Save stats and update Bestie Score
     if guess.id is answer.id
       updatePrefStats { user, card, pref, guess, failCount, correctAnswer: true }
       updateBestieScore user, peggee, failCount, deck, levelFailCount
+      if levelCardsRemaining is 0
+        resetFriendFailCount user, peggee
     else
       updatePrefStats { user, card, pref, guess, failCount, correctAnswer: false }
 
@@ -298,8 +301,21 @@ updateBestieScore = (user, peggee, failCount, deck, levelFailCount) ->
         newBestie.set 'levelFailCount', levelFailCount or 0
         newBestie.set 'ACL', newBestieAcl
         newBestie.save(null, { useMasterKey: true })
-          .then => console.log "updateBestieScore: success -- #{JSON.stringify newBestie}"
+          .then => console.log "updateBestieScore: success"
           .fail (err) => console.error "updateBestieScore: ERROR -- #{JSON.stringify newBestie}", err
+
+resetFriendFailCount = (user, peggee) ->
+  token = user.getSessionToken()
+  bestieQuery = new Parse.Query 'Bestie'
+  bestieQuery.equalTo 'friend', user
+  bestieQuery.equalTo 'user', peggee
+  bestieQuery.first({ sessionToken: token })
+  .then (bestie) ->
+    if bestie?
+      bestie.set 'levelFailCount', 0
+      bestie.save(null, { useMasterKey: true })
+      .then => console.log "resetFriendFailCount: success"
+      .fail (err) => console.error "resetFriendFailCount: ERROR -- #{JSON.stringify bestie}", err
 
 updateCardHasPreffed = (user, card) ->
   token = user.getSessionToken()
