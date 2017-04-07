@@ -24,7 +24,7 @@ class FacebookImporter
         @_getFbFriends url, []
 
   _getFbFriends: (url, fbFriends) =>
-#    log "_getFbFriends", url, fbFriends
+    log "_getFbFriends", url, fbFriends
     Parse.Cloud.httpRequest url: url
     .then (results) =>
       fbFriends = fbFriends.concat(results.data.data)
@@ -42,7 +42,7 @@ class FacebookImporter
     query.find({ useMasterKey: true })
 
   _updateUserFriends: (fbFriendsArray) =>
-#    log "_updateUserFriends", fbFriendsArray
+    log "_updateUserFriends", fbFriendsArray
     privatesQuery = new Parse.Query 'UserPrivates'
     privatesQuery.equalTo 'user', @user
     privatesQuery.first({ useMasterKey: true })
@@ -74,7 +74,7 @@ class FacebookImporter
     promise
 
   _getFacebookFriendsRole: =>
-#    log "_getFacebookFriendsRole"
+    log "_getFacebookFriendsRole"
     query = new Parse.Query Parse.Role
     fbFriendsRoleName = "#{@user.id}_FacebookFriends"
     query.equalTo "name", fbFriendsRoleName
@@ -82,7 +82,7 @@ class FacebookImporter
 
   _createFacebookFriendsRole: (peggFriends) =>
     # create a role that lists user's friends from Facebook
-#    log "_createFacebookFriendsRole", peggFriends
+    log "_createFacebookFriendsRole", peggFriends
     fbFriendsRoleName = "#{@user.id}_FacebookFriends"
     fbFriendsRole = new Parse.Role fbFriendsRoleName, new Parse.ACL()
     if peggFriends.length > 0
@@ -90,7 +90,7 @@ class FacebookImporter
     fbFriendsRole.save(null, { useMasterKey: true })
 
   _createParentFriendRole: (fbFriendsRole) =>
-#    log "_createParentFriendRole", fbFriendsRole
+    log "_createParentFriendRole", fbFriendsRole
     parentRoleName = "#{@user.id}_Friends"
     query = new Parse.Query Parse.Role
     query.equalTo "name", parentRoleName
@@ -114,7 +114,7 @@ class FacebookImporter
         parentRole.save(null, { useMasterKey: true })
 
   _updateFacebookFriendsRole: (fbFriendsRole, peggFriends) =>
-#    log "_updateFacebookFriendsRole", fbFriendsRole, peggFriends
+    log "_updateFacebookFriendsRole", fbFriendsRole, peggFriends
     relation = fbFriendsRole.getUsers()
     query = relation.query()
     query.find({ useMasterKey: true })

@@ -186,6 +186,20 @@ Parse.Cloud.afterSave '_User', (request) ->
         role = new Parse.Role roleName, roleAcl
         role.save(null, { useMasterKey: true })
 
+Parse.Cloud.afterSave 'Zing', (request) ->
+  user = request.user
+  friend = request.object.get 'friend'
+  token = user.getSessionToken()
+  bestieQuery = new Parse.Query 'Bestie'
+  bestieQuery.equalTo 'friend', friend
+  bestieQuery.equalTo 'user', user
+  bestieQuery.first({ sessionToken: token })
+  .then (bestie) ->
+    bestie.set 'lastZingDate', Date.now()
+    bestie.save(null, { useMasterKey: true })
+    .then => console.log "updateBestieZing: success -- #{JSON.stringify bestie}"
+    .fail (err) => console.error "updateBestieZing: ERROR -- #{JSON.stringify bestie}", err
+
 Parse.Cloud.afterSave 'Pegg', (request) ->
   user = request.user
   if !request.object.existed()
