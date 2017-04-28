@@ -46,8 +46,10 @@ Parse.Cloud.define "toggleStar", (request, response) ->
     console.log "HAS STARRED:: " + hasStarred + " AUTHOR:: " + author.id
     if hasStarred.indexOf(user.id) > -1
       quip.remove 'hasStarred', user.id
+      quip.increment 'starCount', -1
     else
       quip.addUnique 'hasStarred', user.id
+      quip.increment 'starCount'
     quip.save(null, { useMasterKey: true })
   .then =>
     friendQuery = new Parse.Query 'User'
