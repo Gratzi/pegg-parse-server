@@ -141,8 +141,9 @@ Parse.Cloud.define "feedback", (request, response) ->
 Parse.Cloud.define "requestFriend", (request, response) ->
   user = request.user
   friendId = request.params.friendId
-  publicsId = request.params.publicsId
-  saveFriendRequest user, friendId, publicsId
+  friendPublicsId = request.params.friendPublicsId
+  userPublicsId = request.params.userPublicsId
+  saveFriendRequest user, friendId, friendPublicsId, userPublicsId
   .then (res) =>
     response.success res
 
@@ -317,12 +318,14 @@ updatePrefStats = ({ user, card, pref, guess, failCount, correctAnswer }) ->
           .fail (err) => console.error "updatePrefStats: ERROR -- #{JSON.stringify err}"
           .then => console.log "updatePrefStats: success -- #{JSON.stringify pref}"
 
-saveFriendRequest = (user, friendId, publicsId) ->
+saveFriendRequest = (user, friendId, friendPublicsId, userPublicsId) ->
   token = user.getSessionToken()
   friend = new Parse.User
   friend.id = friendId
-  publics = new Parse.Object 'UserPublics'
-  publics.id = publicsId
+  friendPublics = new Parse.Object 'UserPublics'
+  friendPublics.id = friendPublicsId
+  userPublics = new Parse.Object 'UserPublics'
+  userPublics.id = userPublicsId
   requestQuery = new Parse.Query 'Request'
   requestQuery.equalTo 'friend', friend
   requestQuery.equalTo 'user', user
@@ -335,7 +338,8 @@ saveFriendRequest = (user, friendId, publicsId) ->
       newRequest = new Parse.Object 'Request'
       newRequest.set 'user', user
       newRequest.set 'friend', friend
-      newRequest.set 'friendPublics', publics
+      newRequest.set 'friendPublics', friendPublics
+      newRequest.set 'userPublics', userPublics
       newRequest.set 'ACL', newRequestACL
       newRequest.save(null, { useMasterKey: true })
 
