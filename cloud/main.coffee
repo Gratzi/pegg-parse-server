@@ -138,6 +138,14 @@ Parse.Cloud.define "feedback", (request, response) ->
     .fail (error) =>
       console.error "56", error
 
+Parse.Cloud.define "requestFriend", (request, response) ->
+  user = request.user
+  friendId = request.params.friendId
+  console.log user, friendId
+  saveFriendRequest user, friendId
+  .then (res) =>
+    response.success res
+
 Parse.Cloud.define "addFriend", (request, response) ->
   userId = request.user.id
   friendId = request.params.friendId
@@ -248,16 +256,12 @@ Parse.Cloud.afterSave 'Pegg', (request) ->
     question = request.object.get 'question'
     failCount = request.object.get 'failCount'
     deck = request.object.get 'deck'
-    levelFailCount = request.object.get 'levelFailCount'
-    levelCardsRemaining = request.object.get 'levelCardsRemaining'
 
     # Correct! Save stats and update Bestie Score
     if guess.id is answer.id
       updatePrefStats { user, card, pref, guess, failCount, correctAnswer: true }
-      updateBestieScore user, peggee, failCount, deck, levelFailCount
-      if levelCardsRemaining is 0
-        resetFriendFailCount user, peggee
-    else
+      updateBestieScore user, peggee, failCount, deck
+      else
       updatePrefStats { user, card, pref, guess, failCount, correctAnswer: false }
 
 Parse.Cloud.afterSave 'Pref', (request) ->
@@ -313,7 +317,26 @@ updatePrefStats = ({ user, card, pref, guess, failCount, correctAnswer }) ->
           .fail (err) => console.error "updatePrefStats: ERROR -- #{JSON.stringify err}"
           .then => console.log "updatePrefStats: success -- #{JSON.stringify pref}"
 
-updateBestieScore = (user, peggee, failCount, deck, levelFailCount) ->
+saveFriendRequest = (user, friendId) ->
+  token = user.getSessionToken()
+  friend = new Parse.User
+  friend.id = friendId
+  requestQuery = new Parse.Query 'Request'
+  requestQuery.equalTo 'friend', friend
+  requestQuery.equalTo 'user', user
+  requestQuery.first({ sessionToken: token })
+  .then (request) ->
+    unless request?
+      newRequestACL = new Parse.ACL()
+      newRequestACL.setReadAccess friend.id, true
+      newRequestACL.setReadAccess user.id, true
+      newRequest = new Parse.Object 'Request'
+      newRequest.set 'user', user
+      newRequest.set 'friend', friend
+      newRequest.set 'ACL', newRequestACL
+      newRequest.save(null, { useMasterKey: true })
+
+updateBestieScore = (user, peggee, failCount, deck) ->
   token = user.getSessionToken()
   bestieQuery = new Parse.Query 'Bestie'
   bestieQuery.equalTo 'friend', peggee
@@ -329,7 +352,6 @@ updateBestieScore = (user, peggee, failCount, deck, levelFailCount) ->
         bestie.increment 'peggCount'
         score = Math.round(( 1 - bestie.get('failCount') / (bestie.get('peggCount') + bestie.get('failCount'))) * 100)
         bestie.set 'score', score
-        bestie.set 'levelFailCount', levelFailCount or 0
         bestie.save(null, { useMasterKey: true })
           .then => console.log "updateBestieScore: success -- #{JSON.stringify bestie}"
           .fail (err) => console.error "updateBestieScore: ERROR -- #{JSON.stringify bestie}", err
@@ -349,24 +371,10 @@ updateBestieScore = (user, peggee, failCount, deck, levelFailCount) ->
         newBestie.set 'peggCounts', peggCounts
         score = Math.round(( 1 - newBestie.get('failCount') / (newBestie.get('peggCount') + newBestie.get('failCount'))) * 100)
         newBestie.set 'score', score
-        newBestie.set 'levelFailCount', levelFailCount or 0
         newBestie.set 'ACL', newBestieAcl
         newBestie.save(null, { useMasterKey: true })
           .then => console.log "updateBestieScore: success"
           .fail (err) => console.error "updateBestieScore: ERROR -- #{JSON.stringify newBestie}", err
-
-resetFriendFailCount = (user, peggee) ->
-  token = user.getSessionToken()
-  bestieQuery = new Parse.Query 'Bestie'
-  bestieQuery.equalTo 'friend', user
-  bestieQuery.equalTo 'user', peggee
-  bestieQuery.first({ sessionToken: token })
-  .then (bestie) ->
-    if bestie?
-      bestie.set 'levelFailCount', 0
-      bestie.save(null, { useMasterKey: true })
-      .then => console.log "resetFriendFailCount: success"
-      .fail (err) => console.error "resetFriendFailCount: ERROR -- #{JSON.stringify bestie}", err
 
 updateCardHasPreffed = (user, card) ->
   token = user.getSessionToken()
