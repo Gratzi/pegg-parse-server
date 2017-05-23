@@ -317,10 +317,12 @@ updatePrefStats = ({ user, card, pref, guess, failCount, correctAnswer }) ->
           .fail (err) => console.error "updatePrefStats: ERROR -- #{JSON.stringify err}"
           .then => console.log "updatePrefStats: success -- #{JSON.stringify pref}"
 
-saveFriendRequest = (user, friendId) ->
+saveFriendRequest = (user, friendId, publicsId) ->
   token = user.getSessionToken()
   friend = new Parse.User
   friend.id = friendId
+  publics = = new Parse.Object 'UserPublics'
+  publics.id = publicsId
   requestQuery = new Parse.Query 'Request'
   requestQuery.equalTo 'friend', friend
   requestQuery.equalTo 'user', user
@@ -333,6 +335,7 @@ saveFriendRequest = (user, friendId) ->
       newRequest = new Parse.Object 'Request'
       newRequest.set 'user', user
       newRequest.set 'friend', friend
+      newRequest.set 'friendPublics', publics
       newRequest.set 'ACL', newRequestACL
       newRequest.save(null, { useMasterKey: true })
 
