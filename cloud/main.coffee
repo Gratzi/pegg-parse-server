@@ -141,8 +141,8 @@ Parse.Cloud.define "feedback", (request, response) ->
 Parse.Cloud.define "requestFriend", (request, response) ->
   user = request.user
   friendId = request.params.friendId
-  console.log user, friendId
-  saveFriendRequest user, friendId
+  publicsId = request.params.publicsId
+  saveFriendRequest user, friendId, publicsId
   .then (res) =>
     response.success res
 
