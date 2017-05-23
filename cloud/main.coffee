@@ -321,7 +321,7 @@ saveFriendRequest = (user, friendId, publicsId) ->
   token = user.getSessionToken()
   friend = new Parse.User
   friend.id = friendId
-  publics = = new Parse.Object 'UserPublics'
+  publics = new Parse.Object 'UserPublics'
   publics.id = publicsId
   requestQuery = new Parse.Query 'Request'
   requestQuery.equalTo 'friend', friend
