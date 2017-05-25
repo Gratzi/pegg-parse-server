@@ -140,81 +140,34 @@ Parse.Cloud.define "feedback", (request, response) ->
 
 Parse.Cloud.define "requestFriend", (request, response) ->
   user = request.user
-  friendId = request.params.friendId
-  friendPublicsId = request.params.friendPublicsId
-  userPublicsId = request.params.userPublicsId
-  saveFriendRequest user, friendId, friendPublicsId, userPublicsId
+  friend = new Parse.User
+  friend.id = request.params.friendId
+  friendPublics = new Parse.Object 'UserPublics'
+  friendPublics.id = request.params.friendPublicsId
+  userPublics = new Parse.Object 'UserPublics'
+  userPublics.id = request.params.userPublicsId
+  saveFriendRequest user, friend, friendPublics, userPublics
   .then (res) =>
     response.success res
+
+Parse.Cloud.define "confirmRequest", (request, response) ->
+  user = request.user
+  friend = new Parse.User
+  friend.id = request.params.friendId
+  console.log friend, user
+  deleteFriendRequest friend, user # reverse order because we're deleting the request the other user made
+  .then (res) =>
+    console.log res
+    if res?
+      createFriendship user.id, friend.id
+      response.success res
+    else
+      response.error res
 
 Parse.Cloud.define "addFriend", (request, response) ->
   userId = request.user.id
   friendId = request.params.friendId
-
-  forwardPromise = new Parse.Promise()
-  backwardPromise = new Parse.Promise()
-
-  Parse.Promise.when(
-    forwardPromise
-    backwardPromise
-  ).then =>
-    Firebase.fanOut
-      userId: userId
-      friendIds: [friendId]
-      timestamp: Date.now()
-    response.success 'New friend added successfully.'
-  , (error) =>
-    response.error error
-
-  # add user to Friend's role
-  friendRoleName = "#{friendId}_Friends"
-  query = new Parse.Query Parse.Role
-  query.equalTo "name", friendRoleName
-  query.first({ useMasterKey: true })
-    .then (friendRole) =>
-      if friendRole?
-        relation = friendRole.getUsers()
-        user = request.user
-        user.fetch({ useMasterKey: true })
-        .then (user) =>
-          relation.add user
-          friendRole.save(null, { useMasterKey: true })
-            .then =>
-              forwardPromise.resolve()
-            .fail (error) =>
-              forwardPromise.reject error
-              console.error "52", error
-      else
-        forwardPromise.reject "friend role missing: #{friendId}_Friends"
-    .fail (error) =>
-      console.error "56", error
-      forwardPromise.reject error
-
-  # add friend to User's role
-  userRoleName = "#{userId}_Friends"
-  query = new Parse.Query Parse.Role
-  query.equalTo "name", userRoleName
-  query.first({ useMasterKey: true })
-  .then (userRole) =>
-    if userRole?
-      relation = userRole.getUsers()
-      query = new Parse.Query Parse.User
-      query.equalTo "objectId", friendId
-      query.first({ useMasterKey: true })
-      .then (friend) =>
-        relation.add friend
-        userRole.save(null, { useMasterKey: true })
-        .then =>
-          backwardPromise.resolve()
-        .fail (error) =>
-          backwardPromise.reject error
-          console.error "75", error
-    else
-      backwardPromise.reject "user role missing: #{userId}_Friends"
-  .fail (error) =>
-    console.error "79", error
-    backwardPromise.reject error
-
+  createFriendship userId, friendId
 
 ######### AFTER SAVE, DELETE, ETC #########
 
@@ -288,6 +241,9 @@ Parse.Cloud.afterSave 'UserPrivates', (request) ->
     .then (res) =>
       console.log res
 
+
+
+
 ######### UPDATES #########
 updatePrefStats = ({ user, card, pref, guess, failCount, correctAnswer }) ->
   console.error "updatePrefStats:", pref
@@ -318,20 +274,32 @@ updatePrefStats = ({ user, card, pref, guess, failCount, correctAnswer }) ->
           .fail (err) => console.error "updatePrefStats: ERROR -- #{JSON.stringify err}"
           .then => console.log "updatePrefStats: success -- #{JSON.stringify pref}"
 
-saveFriendRequest = (user, friendId, friendPublicsId, userPublicsId) ->
-  token = user.getSessionToken()
-  friend = new Parse.User
-  friend.id = friendId
-  friendPublics = new Parse.Object 'UserPublics'
-  friendPublics.id = friendPublicsId
-  userPublics = new Parse.Object 'UserPublics'
-  userPublics.id = userPublicsId
+createFriendship = (userId, friendId) ->
+  Parse.Promise.when(
+    addFriendToRole("#{friendId}_Friends", userId)
+    addFriendToRole("#{userId}_Friends", friendId)
+  ).then =>
+    Firebase.fanOut
+      userId: userId
+      friendIds: [friendId]
+      timestamp: Date.now()
+
+getFriendRequest = (user, friend) ->
   requestQuery = new Parse.Query 'Request'
   requestQuery.equalTo 'friend', friend
   requestQuery.equalTo 'user', user
-  requestQuery.first({ sessionToken: token })
-  .then (request) ->
-    unless request?
+  requestQuery.first({ useMasterKey: true })
+
+deleteFriendRequest = (user, friend) ->
+  getFriendRequest user, friend
+  .then (res) =>
+    console.log "getFriend Result: ", res
+    if res? then res.destroy({ useMasterKey: true })
+
+saveFriendRequest = (user, friend, friendPublics, userPublics) ->
+  getFriendRequest user, friend
+  .then (res) ->
+    unless res?
       newRequestACL = new Parse.ACL()
       newRequestACL.setReadAccess friend.id, true
       newRequestACL.setReadAccess user.id, true
@@ -396,6 +364,31 @@ updateCardHasPreffed = (user, card) ->
         .then =>
           console.log "hasPreffed saved: #{card.id}"
 
+addFriendToRole = (roleName, friendId) ->
+  promise = new Parse.Promise()
+  query = new Parse.Query Parse.Role
+  query.equalTo "name", roleName
+  query.first({ useMasterKey: true })
+  .then (role) =>
+    if role?
+      relation = role.getUsers()
+      query = new Parse.Query Parse.User
+      query.equalTo "objectId", friendId
+      query.first({ useMasterKey: true })
+      .then (friend) =>
+        relation.add friend
+        role.save(null, { useMasterKey: true })
+      .then =>
+        promise.resolve()
+      .fail (error) =>
+        console.error "75", error
+        promise.reject error
+    else
+      promise.reject "role missing: #{roleName}"
+  .fail (error) =>
+    console.error "79", error
+    promise.reject error
+  promise
 
 ######### HELPERS #########
 
