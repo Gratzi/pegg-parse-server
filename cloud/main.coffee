@@ -1,20 +1,11 @@
 _ = require 'underscore'
 sha1 = require 'sha1'
-facebookImporter = require './facebookImporter'
-sendInBlue = require './sendInBlue'
+sendInBlue = require '../lib/sendInBlue'
+slack = require '../lib/slack'
 Firebase = require '../lib/firebase'
 
+###################################
 ######### CLOUD FUNCTIONS #########
-
-Parse.Cloud.define "importFriends", (request, response) ->
-  fbi = new facebookImporter
-  fbi.start request.user
-  .then =>
-    message = "Updated #{request.user.get 'first_name'}'s friends from Facebook (Pegg user id #{request.user.id})"
-    response.success message
-  .fail (error) ->
-    error.stack = new Error().stack
-    response.error error
 
 Parse.Cloud.define "getFirebaseToken", (request, response) ->
   response.success Firebase.getToken userId: request.user.id
@@ -32,35 +23,9 @@ Parse.Cloud.define "updateEmail", (request, response) ->
     response.error err
 
 Parse.Cloud.define "toggleStar", (request, response) ->
-  hasStarred = []
-  author = ""
   quipId = request.params.quipId
-  console.log "QUIPID:::   " + quipId
   user = request.user
-  quipQuery = new Parse.Query 'Quip'
-  quipQuery.equalTo 'objectId', quipId
-  quipQuery.first({ useMasterKey: true })
-  .then (quip) =>
-    hasStarred = quip.get('hasStarred') or []
-    author = quip.get('author')
-    console.log "HAS STARRED:: " + hasStarred + " AUTHOR:: " + author.id
-    if hasStarred.indexOf(user.id) > -1
-      quip.remove 'hasStarred', user.id
-      quip.increment 'starCount', -1
-    else
-      quip.addUnique 'hasStarred', user.id
-      quip.increment 'starCount'
-    quip.save(null, { useMasterKey: true })
-  .then =>
-    friendQuery = new Parse.Query 'User'
-    friendQuery.equalTo 'objectId', author.id
-    friendQuery.first({ useMasterKey: true })
-  .then (friend) =>
-    if hasStarred.indexOf(user.id) > -1
-      friend.increment 'starCount', -1
-    else
-      friend.increment 'starCount'
-    friend.save(null, { useMasterKey: true })
+  toggleStar user, quipId
   .then =>
     response.success "toggleStar success"
     console.log "toggleStar success: #{quipId}"
@@ -70,73 +35,31 @@ Parse.Cloud.define "toggleStar", (request, response) ->
 
 Parse.Cloud.define "error", (request, response) ->
   if request.params?
-    request.params.user ?=
-      name: "Unknown user"
-      id: "Unknown ID"
-    request.params.error ?=
-      stack: "Unknown error"
-    body =
-      channel: '#errors'
-      username: 'PeggErrorBot'
-      icon_emoji: ':ghost:'
-      text: """
-        *User*: #{request.params.user.name} (#{request.params.user.id})
-        *UserAgent*: #{request.params.userAgent}
-        ```#{request.params.error.message}```
-        ```#{request.params.error.stack}```
-      """
-    # TODO Use slack.webhook instead. See uncaughtException() in index.coffee. Unify error handling code between these two places.
-    Parse.Cloud.httpRequest
-      method: "POST"
-      headers:
-        "Content-Type": "application/json"
-      url: 'https://hooks.slack.com/services/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'
-      body: body
-    .catch (error) =>
-      response.error error
+    user = request.params.user or { name: "Unknown user", id: "Unknown ID" }
+    error = request.params.error or { stack: "Unknown error" }
+    userAgent = request.params.userAgent or ''
+    slack.clientError error, user, userAgent
     .then (res) =>
       response.success res
+    .fail (err) =>
+      response.error err
 
 Parse.Cloud.define "feedback", (request, response) ->
   if request.params?
-    friendId = request.params.id
-    body =
-      channel: '#feedback'
-      username: request.params.name
-      icon_emoji: ':unicorn_face:'
-      text: """
-        *UserId*: #{friendId}
-        *Email*: #{request.params.email}
-        *UserAgent*: #{request.params.userAgent}
-        *Context*: #{request.params.context}
-        ```#{request.params.feedback}```
-      """
-    Parse.Cloud.httpRequest
-      method: "POST"
-      headers:
-        "Content-Type": "application/json"
-      url: 'https://hooks.slack.com/services/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'
-      body: body
-    .catch (error) =>
-      response.error error
+    user =
+      id: request.params.id
+      email: request.params.email
+      name: request.params.name
+    userAgent = request.params.userAgent or ''
+    context = request.params.context or ''
+    feedback = request.params.feedback or ''
+    slack.userFeedback user, userAgent, context, feedback
     .then (res) =>
       response.success res
-
+    .fail (err) =>
+      response.error err
     # add cosmic unicorn to user's friend role
-    roleQuery = new Parse.Query Parse.Role
-    roleQuery.equalTo 'name', "#{friendId}_Friends"
-    getUserPromise = roleQuery.first({ useMasterKey: true })
-    cosmicQuery = new Parse.Query Parse.User
-    cosmicQuery.equalTo 'objectId', 'A2UBfjj8n9'
-    getCosmicPromise = cosmicQuery.first({ useMasterKey: true })
-    Parse.Promise.when(getUserPromise, getCosmicPromise)
-    .then (userRole, cosmicUser) =>
-      if userRole? and cosmicUser?
-        relation = userRole.getUsers()
-        relation.add cosmicUser
-        userRole.save(null, { useMasterKey: true })
-    .fail (error) =>
-      console.error "56", error
+    addFriendToRole("#{user.id}_Friends", 'A2UBfjj8n9')
 
 Parse.Cloud.define "requestFriend", (request, response) ->
   user = request.user
@@ -154,10 +77,9 @@ Parse.Cloud.define "confirmRequest", (request, response) ->
   user = request.user
   friend = new Parse.User
   friend.id = request.params.friendId
-  console.log friend, user
-  deleteFriendRequest friend, user # reverse order because we're deleting the request the other user made
+  # delete the request the other user made
+  deleteFriendRequest friend, user
   .then (res) =>
-    console.log res
     if res?
       createFriendship user.id, friend.id
       response.success res
@@ -169,6 +91,7 @@ Parse.Cloud.define "addFriend", (request, response) ->
   friendId = request.params.friendId
   createFriendship userId, friendId
 
+###########################################
 ######### AFTER SAVE, DELETE, ETC #########
 
 Parse.Cloud.afterSave '_User', (request) ->
@@ -210,7 +133,6 @@ Parse.Cloud.afterSave 'Pegg', (request) ->
     question = request.object.get 'question'
     failCount = request.object.get 'failCount'
     deck = request.object.get 'deck'
-
     # Correct! Save stats and update Bestie Score
     if guess.id is answer.id
       updatePrefStats { user, card, pref, guess, failCount, correctAnswer: true }
@@ -241,38 +163,37 @@ Parse.Cloud.afterSave 'UserPrivates', (request) ->
     .then (res) =>
       console.log res
 
+###########################
+######### HELPERS #########
 
-
-
-######### UPDATES #########
 updatePrefStats = ({ user, card, pref, guess, failCount, correctAnswer }) ->
   console.error "updatePrefStats:", pref
   token = user.getSessionToken()
   pref.fetch({sessionToken: token})
-    .fail (err) => console.error "updatePrefStats: ERROR -- #{JSON.stringify err}"
-    .then (pref) =>
-      console.log "updatePrefStats: fetched pref -- #{JSON.stringify pref}"
-      choices = pref.get('choices')
-      firstTry = failCount is 0
-      if correctAnswer
-        # UPDATE Pref with userId in hasPegged array
-        pref.addUnique 'hasPegged', user.id
-      if firstTry
-        if choices?
+  .fail (err) => console.error "updatePrefStats: ERROR -- #{JSON.stringify err}"
+  .then (pref) =>
+    console.log "updatePrefStats: fetched pref -- #{JSON.stringify pref}"
+    choices = pref.get('choices')
+    firstTry = failCount is 0
+    if correctAnswer
+      # UPDATE Pref with userId in hasPegged array
+      pref.addUnique 'hasPegged', user.id
+    if firstTry
+      if choices?
+        choices[guess.id].peggCount++
+        pref.set 'choices', choices
+      else
+        # TODO: Sometimes choices don't get populated on Pref creation, not sure why
+        console.log "ERROR: aaaaarg choices should exist... refetching..."
+        getChoices(card)
+        .then (choices) =>
           choices[guess.id].peggCount++
           pref.set 'choices', choices
-        else
-          # Sometimes choices don't get populated on Pref creation, not sure why
-          console.log "ERROR: aaaaarg choices should exist... refetching..."
-          getChoices(card)
-            .then (choices) =>
-              choices[guess.id].peggCount++
-              pref.set 'choices', choices
-              pref.save(null, { useMasterKey: true })
-      if correctAnswer or firstTry
-        pref.save(null, { useMasterKey: true })
-          .fail (err) => console.error "updatePrefStats: ERROR -- #{JSON.stringify err}"
-          .then => console.log "updatePrefStats: success -- #{JSON.stringify pref}"
+          pref.save(null, { useMasterKey: true })
+    if correctAnswer or firstTry
+      pref.save(null, { useMasterKey: true })
+      .fail (err) => console.error "updatePrefStats: ERROR -- #{JSON.stringify err}"
+      .then => console.log "updatePrefStats: success -- #{JSON.stringify pref}"
 
 createFriendship = (userId, friendId) ->
   Parse.Promise.when(
@@ -311,45 +232,73 @@ saveFriendRequest = (user, friend, friendPublics, userPublics) ->
       newRequest.set 'ACL', newRequestACL
       newRequest.save(null, { useMasterKey: true })
 
+toggleStar = (user, quipId) ->
+  hasStarred = []
+  author = ""
+  quipQuery = new Parse.Query 'Quip'
+  quipQuery.equalTo 'objectId', quipId
+  quipQuery.first({ useMasterKey: true })
+  .then (quip) =>
+    hasStarred = quip.get('hasStarred') or []
+    author = quip.get('author')
+    console.log "HAS STARRED:: " + hasStarred + " AUTHOR:: " + author.id
+    if hasStarred.indexOf(user.id) > -1
+      quip.remove 'hasStarred', user.id
+      quip.increment 'starCount', -1
+    else
+      quip.addUnique 'hasStarred', user.id
+      quip.increment 'starCount'
+    quip.save(null, { useMasterKey: true })
+  .then =>
+    friendQuery = new Parse.Query 'User'
+    friendQuery.equalTo 'objectId', author.id
+    friendQuery.first({ useMasterKey: true })
+  .then (friend) =>
+    if hasStarred.indexOf(user.id) > -1
+      friend.increment 'starCount', -1
+    else
+      friend.increment 'starCount'
+    friend.save(null, { useMasterKey: true })
+
 updateBestieScore = (user, peggee, failCount, deck) ->
   token = user.getSessionToken()
   bestieQuery = new Parse.Query 'Bestie'
   bestieQuery.equalTo 'friend', peggee
   bestieQuery.equalTo 'user', user
   bestieQuery.first({ sessionToken: token })
-    .then (bestie) ->
-      if bestie?
-        peggCounts = bestie.get('peggCounts') or {}
-        if peggCounts[deck]? then peggCounts[deck]++ else peggCounts[deck] = 1
-        bestie.set 'peggCounts', peggCounts
-        bestie.set 'lastDeck', deck
-        bestie.increment 'failCount', failCount
-        bestie.increment 'peggCount'
-        score = Math.round(( 1 - bestie.get('failCount') / (bestie.get('peggCount') + bestie.get('failCount'))) * 100)
-        bestie.set 'score', score
-        bestie.save(null, { useMasterKey: true })
-          .then => console.log "updateBestieScore: success -- #{JSON.stringify bestie}"
-          .fail (err) => console.error "updateBestieScore: ERROR -- #{JSON.stringify bestie}", err
-      else
-        newBestieAcl = new Parse.ACL()
-        newBestieAcl.setRoleReadAccess "#{user.id}_Friends", true
-        newBestieAcl.setRoleReadAccess "#{peggee.id}_Friends", true
-        newBestieAcl.setReadAccess user.id, true
-        newBestie = new Parse.Object 'Bestie'
-        newBestie.set 'failCount', failCount
-        newBestie.set 'peggCount', 1
-        newBestie.set 'friend', peggee
-        newBestie.set 'user', user
-        newBestie.set 'lastDeck', deck
-        peggCounts = {}
-        if peggCounts[deck]? then peggCounts[deck]++ else peggCounts[deck] = 1
-        newBestie.set 'peggCounts', peggCounts
-        score = Math.round(( 1 - newBestie.get('failCount') / (newBestie.get('peggCount') + newBestie.get('failCount'))) * 100)
-        newBestie.set 'score', score
-        newBestie.set 'ACL', newBestieAcl
-        newBestie.save(null, { useMasterKey: true })
-          .then => console.log "updateBestieScore: success"
-          .fail (err) => console.error "updateBestieScore: ERROR -- #{JSON.stringify newBestie}", err
+  .then (bestie) ->
+    if bestie?
+      peggCounts = bestie.get('peggCounts') or {}
+      if peggCounts[deck]? then peggCounts[deck]++ else peggCounts[deck] = 1
+      bestie.set 'peggCounts', peggCounts
+      bestie.set 'lastDeck', deck
+      bestie.increment 'failCount', failCount
+      bestie.increment 'peggCount'
+      score = Math.round(( 1 - bestie.get('failCount') / (bestie.get('peggCount') + bestie.get('failCount'))) * 100)
+      bestie.set 'score', score
+      bestie.save(null, { useMasterKey: true })
+        .then => console.log "updateBestieScore: success -- #{JSON.stringify bestie}"
+        .fail (err) => console.error "updateBestieScore: ERROR -- #{JSON.stringify bestie}", err
+    else
+      newBestieAcl = new Parse.ACL()
+      newBestieAcl.setRoleReadAccess "#{user.id}_Friends", true
+      newBestieAcl.setRoleReadAccess "#{peggee.id}_Friends", true
+      newBestieAcl.setReadAccess user.id, true
+      newBestie = new Parse.Object 'Bestie'
+      newBestie.set 'failCount', failCount
+      newBestie.set 'peggCount', 1
+      newBestie.set 'friend', peggee
+      newBestie.set 'user', user
+      newBestie.set 'lastDeck', deck
+      peggCounts = {}
+      if peggCounts[deck]? then peggCounts[deck]++ else peggCounts[deck] = 1
+      newBestie.set 'peggCounts', peggCounts
+      score = Math.round(( 1 - newBestie.get('failCount') / (newBestie.get('peggCount') + newBestie.get('failCount'))) * 100)
+      newBestie.set 'score', score
+      newBestie.set 'ACL', newBestieAcl
+      newBestie.save(null, { useMasterKey: true })
+        .then => console.log "updateBestieScore: success"
+        .fail (err) => console.error "updateBestieScore: ERROR -- #{JSON.stringify newBestie}", err
 
 updateCardHasPreffed = (user, card) ->
   token = user.getSessionToken()
@@ -389,8 +338,6 @@ addFriendToRole = (roleName, friendId) ->
     console.error "79", error
     promise.reject error
   promise
-
-######### HELPERS #########
 
 # returns {<id>: {text: 'hey', peggCount: 0}, <id2>: ...}
 # requires useMasterKey

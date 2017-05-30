@@ -1,5 +1,5 @@
 require('dotenv').config()
-Utils = require './lib/utils'
+Slack = require './lib/slack'
 
 try
   unless process.env.PEGG_ENV is 'dev'
@@ -53,7 +53,7 @@ try
   # Report uncaught errors to Slack #errors
   # NOTE: This must come last or it won't work.
   app.use (err, req, res, next) =>
-    if err? then Utils.slackError err
+    if err? then Slack.serverError err
 
   port = process.env.PORT or 1337
   httpServer = require('http').createServer(app)
@@ -63,4 +63,4 @@ try
   # This will enable the Live Query real-time server
   ParseServer.createLiveQueryServer httpServer
 catch err
-  Utils.slackError err, true
+  Slack.serverError err, true
