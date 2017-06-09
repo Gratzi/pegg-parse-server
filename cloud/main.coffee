@@ -91,6 +91,14 @@ Parse.Cloud.define "addFriend", (request, response) ->
   friendId = request.params.friendId
   createFriendship userId, friendId
 
+Parse.Cloud.define "createCard", (request, response) ->
+  # console.log 'CARD: ', JSON.stringify request.params.card
+  createCard request.user, request.params.card
+  .then (res) =>
+    response.success res
+  .fail (error) =>
+    response.error error
+
 ###########################################
 ######### AFTER SAVE, DELETE, ETC #########
 
@@ -165,6 +173,58 @@ Parse.Cloud.afterSave 'UserPrivates', (request) ->
 
 ###########################
 ######### HELPERS #########
+
+# TODO: set class level ACL on Card to Public Read only
+createCard = (user, card) ->
+  cardPromise = new Parse.Promise
+  newCardAcl = new Parse.ACL user
+  newCardAcl.setRoleReadAccess "#{user.id}_Friends", true
+  newCard = new Parse.Object 'Card'
+  newCard.set 'question', card.question
+  newCard.set 'createdBy', user
+  newCard.set 'disabled', true
+  newCard.set 'publishDate', new Date
+  newCard.set 'deck', 'Friends'
+  newCard.set 'ACL', newCardAcl
+  newCard.save(null, { useMasterKey: true })
+  .then (newCard) =>
+    saved = for choice in card.choices
+      saveChoice user.id, newCard.id, choice
+    Parse.Promise.when saved
+    .then (choices...) =>
+      cardChoices = _.indexBy choices[0], 'id'
+      finishCardCreation newCard, cardChoices
+
+saveChoice = (userId, cardId, answer) ->
+  choicePromise = new Parse.Promise
+  createdBy = new Parse.User
+  createdBy.set 'id', userId
+  card = new Parse.Object 'Card'
+  card.set 'id', cardId
+  acl = new Parse.ACL createdBy
+  acl.setPublicReadAccess false
+  choice = new Parse.Object 'Choice'
+  choice.set 'text', answer.text
+  choice.set 'image', answer.image
+  choice.set 'card', card
+  choice.set 'createdBy', createdBy
+  choice.set 'ACL', acl
+  choice.save(null, { useMasterKey: true })
+  .then (choice) =>
+    choicePromise.resolve
+      id: choice.id
+      cardId: choice.get('card')?.id
+      text: choice.get('text')
+      image: choice.get('image')
+  .fail (error) =>
+    console.log "ERROR:   ", error
+    choicePromise.reject error
+  choicePromise
+
+finishCardCreation = (card, choices) ->
+  card.set 'choices', choices
+  card.set 'disabled', false
+  card.save(null, { useMasterKey: true })
 
 updatePrefStats = ({ user, card, pref, guess, failCount, correctAnswer }) ->
   console.error "updatePrefStats:", pref
@@ -297,21 +357,21 @@ updateBestieScore = (user, peggee, failCount, deck) ->
       newBestie.set 'score', score
       newBestie.set 'ACL', newBestieAcl
       newBestie.save(null, { useMasterKey: true })
-        .then => console.log "updateBestieScore: success"
-        .fail (err) => console.error "updateBestieScore: ERROR -- #{JSON.stringify newBestie}", err
+      .then => console.log "updateBestieScore: success"
+      .fail (err) => console.error "updateBestieScore: ERROR -- #{JSON.stringify newBestie}", err
 
 updateCardHasPreffed = (user, card) ->
   token = user.getSessionToken()
   card.fetch({sessionToken: token})
-    .then (card) =>
-      if card.get('hasPreffed') is undefined
-        card.set 'hasPreffed', []
-      card.addUnique 'hasPreffed', user.id
-      card.save(null, { useMasterKey: true })
-        .fail (error) ->
-          console.log 'hasPreffed failed', error
-        .then =>
-          console.log "hasPreffed saved: #{card.id}"
+  .then (card) =>
+    if card.get('hasPreffed') is undefined
+      card.set 'hasPreffed', []
+    card.addUnique 'hasPreffed', user.id
+    card.save(null, { useMasterKey: true })
+      .fail (error) ->
+        console.log 'hasPreffed failed', error
+      .then =>
+        console.log "hasPreffed saved: #{card.id}"
 
 addFriendToRole = (roleName, friendId) ->
   promise = new Parse.Promise()
