@@ -22,17 +22,6 @@ Parse.Cloud.define "updateEmail", (request, response) ->
   .fail (err) =>
     response.error err
 
-Parse.Cloud.define "toggleStar", (request, response) ->
-  quipId = request.params.quipId
-  user = request.user
-  toggleStar user, quipId
-  .then =>
-    response.success "toggleStar success"
-    console.log "toggleStar success: #{quipId}"
-  .fail (error) =>
-    response.error error
-    console.log 'toggleStar failed', error
-
 Parse.Cloud.define "error", (request, response) ->
   if request.params?
     user = request.params.user or { name: "Unknown user", id: "Unknown ID" }
@@ -158,6 +147,8 @@ Parse.Cloud.afterSave 'Pref', (request) ->
   if !pref.existed() # if new object
     updateCardHasPreffed user, card # updates hasPreffed on Card
     incrementChoiceCount answer.id, 'prefCount' # what's the most popular preference?
+    if card.author?
+      incrementStars card.author.id
 
 Parse.Cloud.afterSave 'UserPrivates', (request) ->
 # can't use afterSave Parse.User because on new user creation two saves happen, the first without any user details
@@ -292,33 +283,20 @@ saveFriendRequest = (user, friend, friendPublics, userPublics) ->
       newRequest.set 'ACL', newRequestACL
       newRequest.save(null, { useMasterKey: true })
 
-toggleStar = (user, quipId) ->
-  hasStarred = []
-  author = ""
-  quipQuery = new Parse.Query 'Quip'
-  quipQuery.equalTo 'objectId', quipId
-  quipQuery.first({ useMasterKey: true })
-  .then (quip) =>
-    hasStarred = quip.get('hasStarred') or []
-    author = quip.get('author')
-    console.log "HAS STARRED:: " + hasStarred + " AUTHOR:: " + author.id
-    if hasStarred.indexOf(user.id) > -1
-      quip.remove 'hasStarred', user.id
-      quip.increment 'starCount', -1
-    else
-      quip.addUnique 'hasStarred', user.id
-      quip.increment 'starCount'
-    quip.save(null, { useMasterKey: true })
+incrementStars = (authorId) ->
+  userQuery = new Parse.Query 'User'
+  userQuery.equalTo 'objectId', authorId
+  userQuery.first({ useMasterKey: true })
+  .then (user) =>
+    user.increment 'starCount'
+    user.save(null, { useMasterKey: true })
   .then =>
-    friendQuery = new Parse.Query 'User'
-    friendQuery.equalTo 'objectId', author.id
-    friendQuery.first({ useMasterKey: true })
-  .then (friend) =>
-    if hasStarred.indexOf(user.id) > -1
-      friend.increment 'starCount', -1
-    else
-      friend.increment 'starCount'
-    friend.save(null, { useMasterKey: true })
+    response.success "incrementStars success"
+    console.log "incrementStars success: #{authorId}"
+  .fail (error) =>
+    response.error error
+    console.log 'incrementStars fail', error
+
 
 updateBestieScore = (user, peggee, failCount, deck) ->
   token = user.getSessionToken()
