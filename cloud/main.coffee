@@ -292,11 +292,9 @@ incrementStars = (authorId) ->
     user.increment 'starCount'
     user.save(null, { useMasterKey: true })
   .then =>
-    response.success "incrementStars success"
     console.log "incrementStars success: #{authorId}"
   .fail (error) =>
-    response.error error
-    console.log 'incrementStars fail', error
+    console.error 'incrementStars fail', error
 
 
 updateBestieScore = (user, peggee, failCount, deck) ->
