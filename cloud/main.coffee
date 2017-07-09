@@ -148,7 +148,7 @@ Parse.Cloud.afterSave 'Pref', (request) ->
   if !pref.existed() # if new object
     updateCardHasPreffed user, card # updates hasPreffed on Card
     incrementChoiceCount answer.id, 'prefCount' # what's the most popular preference?
-    if author.id?
+    if author?
       incrementStars author.id
 
 Parse.Cloud.afterSave 'UserPrivates', (request) ->
