@@ -45,13 +45,13 @@ class FanOutsWorker
           log " -- notifying friend", friendId
           firebase.child("inbound/#{friendId}").push
             timestamp: data.timestamp
-            type: 'friendsUpdate'
+            type: data.type
             userId: data.userId
             friendId: friendId
         # push a notification to ourself
         notified.push firebase.child("inbound/#{data.userId}").push
           timestamp: data.timestamp
-          type: 'friendsUpdate'
+          type: data.type
           userId: data.userId
           friendIds: data.friendIds
         # wait until they're all sent
