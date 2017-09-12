@@ -276,8 +276,8 @@ createFriendship = (userId, friendId, userName) ->
     Firebase.sendPush
       title: "You and #{userName} are now friends!"
       message: "Start pegging them."
-      userId: user.id
-      friendId: friend.id
+      userId: userId
+      friendId: friendId
       timestamp: Date.now()
 
 getFriendRequest = (user, friend) ->
