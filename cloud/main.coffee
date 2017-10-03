@@ -58,7 +58,7 @@ Parse.Cloud.define "requestFriend", (request, response) ->
   friendPublics.id = request.params.friendPublicsId
   userPublics = new Parse.Object 'UserPublics'
   userPublics.id = request.params.userPublicsId
-  userName = request.userName
+  userName = request.params.userName
   saveFriendRequest user, friend, friendPublics, userPublics
   .then (res) =>
     response.success res
@@ -80,7 +80,7 @@ Parse.Cloud.define "confirmRequest", (request, response) ->
   user = request.user
   friend = new Parse.User
   friend.id = request.params.friendId
-  userName = request.userName
+  userName = request.params.userName
   # delete the request the other user made
   deleteFriendRequest friend, user
   .then (res) =>
@@ -93,7 +93,7 @@ Parse.Cloud.define "confirmRequest", (request, response) ->
 Parse.Cloud.define "addFriend", (request, response) ->
   userId = request.user.id
   friendId = request.params.friendId
-  userName = request.userName
+  userName = request.params.userName
   createFriendship userId, friendId, userName
 
 Parse.Cloud.define "createCard", (request, response) ->
