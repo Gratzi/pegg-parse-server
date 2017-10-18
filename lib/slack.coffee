@@ -3,6 +3,8 @@ PEGG_SUPPRESS_ERROR_CODES = process.env.PEGG_SUPPRESS_ERROR_CODES or ' '
 Slack = require 'slack-node'
 slack = new Slack()
 slack.setWebhook SLACK_URL
+debug = require 'debug'
+errorLog = debug 'pegg:worker:error'
 
 Slack =
 
@@ -15,7 +17,8 @@ Slack =
     return if supressedCodes.includes err.code
 
     logMessage = if err.stack? then err.stack else JSON.stringify err
-    console.error "OMG uncaught internal server error.", logMessage
+
+    errorLog err "OMG uncaught internal server error.", logMessage
     slack.webhook
       channel: "#errors"
       username: 'PeggErrorBot'
@@ -42,7 +45,7 @@ Slack =
       """
     , (err, response) =>
       if err?
-        console.error "Error posting client error to Slack #errors. Fail sauce.", err
+        errorLog err "Error posting client error to Slack #errors. Fail sauce.", err
         promise.reject err
       else
         promise.resolve response

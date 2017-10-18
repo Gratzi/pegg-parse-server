@@ -2,17 +2,13 @@ Utils = require './utils'
 debug = require 'debug'
 log = debug 'pegg:worker:log'
 errorLog = debug 'pegg:worker:error'
-fail = (err) ->
-  if typeof err is 'string'
-    err = new Error err
-  errorLog err
-  Utils.slackError err
+Slack = require './lib/slack'
 
 Promise = require('parse').Promise
 Firebase = require 'firebase'
 FirebaseTokenGenerator = require 'firebase-token-generator'
-FIREBASE_SECRET = process.env.FIREBASE_SECRET or fail "cannot have an empty FIREBASE_SECRET"
-FIREBASE_DATABASE_URL = process.env.FIREBASE_DATABASE_URL or fail "cannot have an empty FIREBASE_DATABASE_URL"
+FIREBASE_SECRET = process.env.FIREBASE_SECRET or Slack.serverError "cannot have an empty FIREBASE_SECRET"
+FIREBASE_DATABASE_URL = process.env.FIREBASE_DATABASE_URL or Slack.serverError "cannot have an empty FIREBASE_DATABASE_URL"
 
 class PeggFirebase
 

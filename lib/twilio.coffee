@@ -1,13 +1,16 @@
+Utils = require './utils'
 twilio = require 'twilio'
 Promise = require('parse').Promise
 debug = require 'debug'
 log = debug 'pegg:worker:log'
 errorLog = debug 'pegg:worker:error'
+Slack = require './lib/slack'
+
 client = null
 
-TWILIO_SID = process.env.TWILIO_SID or fail "cannot have an empty TWILIO_SID"
-TWILIO_SECRET = process.env.TWILIO_SECRET or fail "cannot have an empty TWILIO_SECRET"
-TWILIO_NUMBER = process.env.TWILIO_NUMBER or fail "cannot have an empty TWILIO_NUMBER"
+TWILIO_SID = process.env.TWILIO_SID or Slack.serverError "cannot have an empty TWILIO_SID"
+TWILIO_SECRET = process.env.TWILIO_SECRET or Slack.serverError "cannot have an empty TWILIO_SECRET"
+TWILIO_NUMBER = process.env.TWILIO_NUMBER or Slack.serverError "cannot have an empty TWILIO_NUMBER"
 
 class PeggTwilio
 
