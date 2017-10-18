@@ -40,6 +40,29 @@ class PeggFirebase
       inboxChannel = @_firebaseRef.child "inbound/#{friendId}"
       inboxChannel.push { userId, type, timestamp }
 
+  saveVerifyCode: ({ phoneNumber, code }) =>
+    @_ready.then =>
+      log "saving code: ", phoneNumber
+      promise = new Promise
+      inboxChannel = @_firebaseRef.child "verify/#{phoneNumber}"
+      inboxChannel.set code, (error) =>
+        if error?
+          log.error "writing verifyCode failed", error
+          promise.reject error
+        else
+          promise.resolve()
+
+  getVerifyCode: ({ phoneNumber }) =>
+    @_ready.then =>
+      promise = new Promise
+      verifyChannel = @_firebaseRef.child "verify/#{phoneNumber}"
+      verifyChannel.once 'value', (snapshot) =>
+        if snapshot?
+          promise.resolve snapshot.val()
+        else
+          promise.reject()
+      promise
+
   sendPush: ({title, message, userId, friendId, timestamp}) =>
     pushMessage =
       title: title

@@ -3,6 +3,9 @@ sha1 = require 'sha1'
 sendInBlue = require '../lib/sendInBlue'
 slack = require '../lib/slack'
 Firebase = require '../lib/firebase'
+twilio = require '../lib/twilio'
+debug = require 'debug'
+log = debug 'pegg:worker:log'
 
 ###################################
 ######### CLOUD FUNCTIONS #########
@@ -104,36 +107,70 @@ Parse.Cloud.define "createCard", (request, response) ->
   .fail (error) =>
     response.error error
 
+Parse.Cloud.define "sendVerifyCode", (request, response) ->
+  phoneNumber = request.params.phoneNumber
+  if phoneNumber?
+    code = Math.floor(Math.random() * 900000) + 100000 # hash of phone and random 6 digit code
+    Firebase.saveVerifyCode { phoneNumber, code }
+    .then =>
+      twilio.sendSMS phoneNumber, "Pegg Code: #{code}. Get your pegg on!"
+    .then (message) =>
+      response.success message.sid
+    .fail (error) =>
+      response.error error
+  else
+    response.error 'must submit a phone number'
+
+Parse.Cloud.define "checkVerifyCode", (request, response) ->
+  phoneNumber = request.params.phoneNumber
+  code = parseInt request.params.code
+  if phoneNumber? and code?
+    Firebase.getVerifyCode { phoneNumber }
+    .then (result) =>
+      log "code from firebase: #{result} vs. request #{code}"
+      if result? and result is code
+        # Verified!
+        password = generatePassword 15
+        username = sha1 phoneNumber
+        # if user already exists then resetPassword else create user
+        userQuery = new Parse.Query 'User'
+        userQuery.equalTo 'username', username
+        userQuery.first({ useMasterKey: true })
+        .then (user) =>
+          if user?
+            user.setPassword password
+            user.save(null, { useMasterKey: true })
+          else
+            Parse.User.signUp(username, password, {
+              isActive: true
+            }).then (user) =>
+              roleName = "#{user.id}_Friends"
+              console.log "creating role", roleName
+              roleAcl = new Parse.ACL()
+              role = new Parse.Role roleName, roleAcl
+              role.save(null, { useMasterKey: true })
+              userAcl = new Parse.ACL user
+              userAcl.setPublicReadAccess false
+              userAcl.setPublicWriteAccess false
+              userAcl.setRoleReadAccess "#{user.id}_Friends", true
+              user.set 'ACL', userAcl
+              user.save(null, { useMasterKey: true })
+        .then (user) =>
+          response.success { password }
+        .fail (error) =>
+          log.error error
+          response.error error
+      else
+        response.error 'incorrect code'
+    .fail (error) =>
+      log.error error
+      response.error error
+  else
+    response.error 'must submit a phoneNumber and Code'
+
+
 ###########################################
 ######### AFTER SAVE, DELETE, ETC #########
-
-Parse.Cloud.afterSave '_User', (request) ->
-  user = request.object
-  user.fetch({ useMasterKey: true })
-  .then (user) =>
-    if !user.existed()
-      facebookId = user.get 'facebook_id'
-      if !facebookId?
-      # Create friend role for a email/pass login (non FB)
-        roleName = "#{user.id}_Friends"
-        console.log "creating role", roleName
-        roleAcl = new Parse.ACL()
-        role = new Parse.Role roleName, roleAcl
-        role.save(null, { useMasterKey: true })
-
-#Parse.Cloud.afterSave 'Zing', (request) ->
-#  user = request.user
-#  friend = request.object.get 'friend'
-#  token = user.getSessionToken()
-#  bestieQuery = new Parse.Query 'Bestie'
-#  bestieQuery.equalTo 'friend', friend
-#  bestieQuery.equalTo 'user', user
-#  bestieQuery.first({ sessionToken: token })
-#  .then (bestie) ->
-#    bestie.set 'lastZingDate', Date.now()
-#    bestie.save(null, { useMasterKey: true })
-#    .then => console.log "updateBestieZing: success -- #{JSON.stringify bestie}"
-#    .fail (err) => console.error "updateBestieZing: ERROR -- #{JSON.stringify bestie}", err
 
 Parse.Cloud.afterSave 'Pegg', (request) ->
   user = request.user
@@ -181,6 +218,15 @@ Parse.Cloud.afterSave 'UserPrivates', (request) ->
 
 ###########################
 ######### HELPERS #########
+# credit: https://gist.github.com/jacobbuck/4247179
+generatePassword = (length) ->
+  password = ''
+  character = undefined
+  while length > password.length
+    if password.indexOf(character = String.fromCharCode(Math.floor(Math.random() * 94) + 33), Math.floor(password.length / 94) * 94) < 0
+      password += character
+  password
+
 
 # TODO: set class level ACL on Card to Public Read only
 createCard = (user, card) ->
