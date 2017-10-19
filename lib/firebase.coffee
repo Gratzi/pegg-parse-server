@@ -2,7 +2,7 @@ Utils = require './utils'
 debug = require 'debug'
 log = debug 'pegg:worker:log'
 errorLog = debug 'pegg:worker:error'
-Slack = require './lib/slack'
+Slack = require './slack'
 
 Promise = require('parse').Promise
 Firebase = require 'firebase'
