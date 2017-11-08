@@ -353,7 +353,8 @@ saveFriendRequest = (user, friend, friendPublics, userPublics) ->
       newRequest.set 'ACL', newRequestACL
       newRequest.save(null, { useMasterKey: true })
     else
-      return new Promise().reject()
+      promise = new Parse.Promise
+      return promise.reject()
 
 incrementStars = (authorId) ->
   userQuery = new Parse.Query 'User'
