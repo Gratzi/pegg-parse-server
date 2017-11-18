@@ -50,8 +50,6 @@ Parse.Cloud.define "feedback", (request, response) ->
       response.success res
     .fail (err) =>
       response.error err
-    # add cosmic unicorn to user's friend role
-    addFriendToRole("#{user.id}_Friends", 'A2UBfjj8n9')
 
 Parse.Cloud.define "requestFriend", (request, response) ->
   user = request.user
