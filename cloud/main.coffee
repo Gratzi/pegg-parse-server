@@ -211,10 +211,11 @@ Parse.Cloud.afterSave 'UserPrivates', (request) ->
     email = userPrivates.get 'email'
     firstName = userPrivates.get 'firstName'
     lastName = userPrivates.get 'lastName'
-    console.log "subscribing to SendInBlue:", JSON.stringify {email, firstName, lastName}
-    sendInBlue.createOrUpdate {email, firstName, lastName}
-    .then (res) =>
-      console.log res
+    if email?
+      console.log "subscribing to SendInBlue:", JSON.stringify {email, firstName, lastName}
+      sendInBlue.createOrUpdate {email, firstName, lastName}
+      .then (res) =>
+        console.log res
 
 ###########################
 ######### HELPERS #########
