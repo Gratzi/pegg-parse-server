@@ -63,17 +63,12 @@ Parse.Cloud.define "requestFriend", (request, response) ->
   saveFriendRequest user, friend, friendPublics, userPublics
   .then (res) =>
     response.success res
-    Firebase.fanOut
-      type: 'friendRequest'
-      userId: user.id
-      friendIds: [friend.id]
-      timestamp: Date.now()
+    Firebase.sendToInbox type: 'friendRequest', userId: userId, friendId: friendId
     Firebase.sendPush
       title: "#{userName} sent you a friend request."
       message: "Confirm the request to start pegging them!"
       userId: user.id
       friendId: friend.id
-      timestamp: Date.now()
   .fail (err) =>
     response.error err
 
@@ -312,17 +307,13 @@ createFriendship = (userId, friendId, userName) ->
     addFriendToRole("#{friendId}_Friends", userId)
     addFriendToRole("#{userId}_Friends", friendId)
   ).then =>
-    Firebase.fanOut
-      type: 'friendsUpdate'
-      userId: userId
-      friendIds: [friendId]
-      timestamp: Date.now()
+    Firebase.sendToInbox type: 'friendsUpdate', userId: userId, friendId: friendId
+    Firebase.sendToInbox type: 'friendsUpdate', userId: friendId, friendId: userId
     Firebase.sendPush
       title: "You and #{userName} are now friends!"
       message: "Start pegging them."
       userId: userId
       friendId: friendId
-      timestamp: Date.now()
 
 getFriendRequest = (user, friend) ->
   requestQuery = new Parse.Query 'Request'
