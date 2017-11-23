@@ -30,8 +30,9 @@ class PeggFirebase
       fanOutsChannel = @_firebaseRef.child 'fanOuts/tasks'
       fanOutsChannel.push { friendIds, userId, timestamp }
 
-  sendToInbox: ({ friendId, userId, type, timestamp }) =>
+  sendToInbox: ({ friendId, userId, type }) =>
     @_ready.then =>
+      timestamp = Date.now()
       log "sending to Inbox: ", friendId, userId, type, timestamp
       inboxChannel = @_firebaseRef.child "inbound/#{friendId}"
       inboxChannel.push { userId, type, timestamp }
@@ -59,20 +60,22 @@ class PeggFirebase
           promise.reject()
       promise
 
-  sendPush: ({title, message, userId, friendId, timestamp}) =>
-    pushMessage =
-      title: title
-      message: message
-      data:
-        sender: userId
-        receiver: friendId
+  sendPush: ({ title, message, userId, friendId }) =>
+    @_ready.then =>
+      timestamp = Date.now()
+      pushMessage =
         title: title
         message: message
-        timestamp: timestamp
-        style: "inbox"
-        summaryText: "%n% new messages"
-    pushChannel = @_firebaseRef.child('push').child('tasks')
-    pushChannel.push pushMessage
+        data:
+          sender: userId
+          receiver: friendId
+          title: title
+          message: message
+          timestamp: timestamp
+          style: "inbox"
+          summaryText: "%n% new messages"
+      pushChannel = @_firebaseRef.child('push').child('tasks')
+      pushChannel.push pushMessage
 
   getToken: ({ userId }) =>
     tokenGenerator = new FirebaseTokenGenerator FIREBASE_SECRET
