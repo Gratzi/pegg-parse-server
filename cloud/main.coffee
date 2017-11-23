@@ -63,7 +63,7 @@ Parse.Cloud.define "requestFriend", (request, response) ->
   saveFriendRequest user, friend, friendPublics, userPublics
   .then (res) =>
     response.success res
-    Firebase.sendToInbox type: 'friendRequest', userId: userId, friendId: friendId
+    Firebase.sendToInbox type: 'friendRequest', userId: user.id, friendId: friend.id
     Firebase.sendPush
       title: "#{userName} sent you a friend request."
       message: "Confirm the request to start pegging them!"
