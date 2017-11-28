@@ -69,6 +69,7 @@ Parse.Cloud.define "requestFriend", (request, response) ->
       message: "Confirm the request to start pegging them!"
       userId: user.id
       friendId: friend.id
+      type: 'friendRequest'
   .fail (err) =>
     response.error err
 
@@ -315,6 +316,7 @@ createFriendship = (userId, friendId, userName) ->
       message: "Start pegging them."
       userId: userId
       friendId: friendId
+      type: 'friendAdded'
 
 getFriendRequest = (user, friend) ->
   requestQuery = new Parse.Query 'Request'
