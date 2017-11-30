@@ -17,8 +17,8 @@ Slack =
     return if supressedCodes.includes err.code
 
     logMessage = if err.stack? then err.stack else JSON.stringify err
-
-    errorLog err "OMG uncaught internal server error.", logMessage
+    # errorLog err "OMG uncaught internal server error.", logMessage
+    errorLog JSON.stringify err
     slack.webhook
       channel: "#errors"
       username: 'PeggErrorBot'
