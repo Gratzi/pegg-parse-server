@@ -81,7 +81,13 @@ Parse.Cloud.define "confirmRequest", (request, response) ->
   deleteFriendRequest friend, user
   .then (res) =>
     if res?
-      createFriendship user.id, friend.id, userName
+      createFriendship user.id, friend.id
+      .then =>
+        Firebase.sendPush
+          title: "#{userName} confirmed your friend request!"
+          message: "Start pegging them."
+          userId: user.id
+          friendId: friend.id
       response.success res
     else
       response.error res
@@ -90,7 +96,29 @@ Parse.Cloud.define "addFriend", (request, response) ->
   userId = request.user.id
   friendId = request.params.friendId
   userName = request.params.userName
-  createFriendship userId, friendId, userName
+  createFriendship userId, friendId
+  .then =>
+    Firebase.sendPush
+      title: "You and #{userName} are now friends!"
+      message: "Start pegging them."
+      userId: userId
+      friendId: friendId
+
+Parse.Cloud.define "addRando", (request, response) ->
+  userId = request.user.id
+  userQuery = new Parse.Query 'User'
+  userQuery.notEqualTo 'objectId', userId
+  userQuery.notEqualTo 'hasRandoed', userId
+  userQuery.lessThanOrEqualTo 'randoCount', 0
+  userQuery.first({ useMasterKey: true })
+  .then (rando) =>
+    createFriendship userId, rando.id
+    .then =>
+      Firebase.sendPush
+        title: "A new rando is pegging you!"
+        message: "Get your flirt on, sexy."
+        userId: userId
+        friendId: rando.id
 
 Parse.Cloud.define "createCard", (request, response) ->
   # console.log 'CARD: ', JSON.stringify request.params.card
@@ -302,18 +330,13 @@ updatePrefStats = ({ user, card, pref, guess, failCount, correctAnswer }) ->
       .fail (err) => console.error "updatePrefStats: ERROR -- #{JSON.stringify err}"
       .then => console.log "updatePrefStats: success -- #{JSON.stringify pref}"
 
-createFriendship = (userId, friendId, userName) ->
+createFriendship = (userId, friendId) ->
   Parse.Promise.when(
     addFriendToRole("#{friendId}_Friends", userId)
     addFriendToRole("#{userId}_Friends", friendId)
   ).then =>
     Firebase.sendToInbox type: 'friendsUpdate', userId: userId, friendId: friendId
     Firebase.sendToInbox type: 'friendsUpdate', userId: friendId, friendId: userId
-    Firebase.sendPush
-      title: "You and #{userName} are now friends!"
-      message: "Start pegging them."
-      userId: userId
-      friendId: friendId
 
 getFriendRequest = (user, friend) ->
   requestQuery = new Parse.Query 'Request'
