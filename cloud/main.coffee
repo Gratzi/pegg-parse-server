@@ -63,12 +63,13 @@ Parse.Cloud.define "requestFriend", (request, response) ->
   saveFriendRequest user, friend, friendPublics, userPublics
   .then (res) =>
     response.success res
-    Firebase.sendToInbox type: 'friendRequest', userId: userId, friendId: friendId
+    Firebase.sendToInbox type: 'friendRequest', userId: user.id, friendId: friend.id
     Firebase.sendPush
       title: "#{userName} sent you a friend request."
       message: "Confirm the request to start pegging them!"
       userId: user.id
       friendId: friend.id
+      type: 'friendRequest'
   .fail (err) =>
     response.error err
 
@@ -232,10 +233,11 @@ Parse.Cloud.afterSave 'UserPrivates', (request) ->
     email = userPrivates.get 'email'
     firstName = userPrivates.get 'firstName'
     lastName = userPrivates.get 'lastName'
-    console.log "subscribing to SendInBlue:", JSON.stringify {email, firstName, lastName}
-    sendInBlue.createOrUpdate {email, firstName, lastName}
-    .then (res) =>
-      console.log res
+    if email?
+      console.log "subscribing to SendInBlue:", JSON.stringify {email, firstName, lastName}
+      sendInBlue.createOrUpdate {email, firstName, lastName}
+      .then (res) =>
+        console.log res
 
 ###########################
 ######### HELPERS #########
