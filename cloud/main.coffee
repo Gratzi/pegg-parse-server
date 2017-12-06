@@ -105,21 +105,60 @@ Parse.Cloud.define "addFriend", (request, response) ->
       userId: userId
       friendId: friendId
 
-Parse.Cloud.define "addRando", (request, response) ->
+Parse.Cloud.define "findRandos", (request, response) ->
   userId = request.user.id
-  userQuery = new Parse.Query 'User'
-  userQuery.notEqualTo 'objectId', userId
-  userQuery.notEqualTo 'hasRandoed', userId
-  userQuery.lessThanOrEqualTo 'randoCount', 0
-  userQuery.first({ useMasterKey: true })
+  token = request.user.getSessionToken()
+  userFriendsQuery = new Parse.Query 'User'
+  userFriendsQuery.find({sessionToken: token})
+  .then (results) =>
+    _.map results, 'id'
+  .then (friendIds) =>
+    userRandosQuery = new Parse.Query 'User'
+    userRandosQuery.notContainedIn 'objectId', friendIds
+    userRandosQuery.notEqualTo 'hasRandoed', userId
+    userRandosQuery.lessThanOrEqualTo 'hasRandoedCount', 0
+    userRandosQuery.greaterThanOrEqualTo 'prefCount', 1
+    userRandosQuery.include 'ACL'
+    userRandosQuery.limit 4
+    userRandosQuery.find({ useMasterKey: true })
+  .then (results) =>
+    randos = []
+    for rando in results
+      avatarUrl = "Unicorn#{rando.get('publicUsername').charCodeAt(0) % 12 + 1}.svg"
+      randos.push
+        randoId: rando.id
+        firstName: rando.get 'first_name'
+        lastName: rando.get 'last_name'
+        avatarUrl: rando.get('avatar_url') or avatarUrl
+    response.success randos
+  .fail (error) =>
+    response.error error
+
+Parse.Cloud.define "addRando", (request, response) ->
+  # TODO: rando validation: make sure request.randoId is a valid rando (found via findRandos)
+  randoId = request.params.randoId
+  userId = request.user.id
+  console.log "Adding Rando #{randoId} for User #{userId}"
+  createFriendship userId, randoId
+  .then =>
+    userQuery = new Parse.Query 'User'
+    userQuery.equalTo 'objectId', randoId
+    userQuery.first({ useMasterKey: true })
   .then (rando) =>
-    createFriendship userId, rando.id
-    .then =>
-      Firebase.sendPush
-        title: "A new rando is pegging you!"
-        message: "Get your flirt on, sexy."
-        userId: userId
-        friendId: rando.id
+    rando.increment 'hasRandoedCount'
+    if rando.get('hasRandoed') is undefined
+      rando.set 'hasRandoed', []
+    rando.addUnique 'hasRandoed', userId
+    rando.save(null, { useMasterKey: true })
+  .then =>
+    Firebase.sendPush
+      title: "A new rando is pegging you!"
+      message: "Get your flirt on, sexy."
+      userId: userId
+      friendId: randoId
+    response.success 'Rando Added'
+  .fail (error) =>
+    response.error error
 
 Parse.Cloud.define "createCard", (request, response) ->
   # console.log 'CARD: ', JSON.stringify request.params.card
