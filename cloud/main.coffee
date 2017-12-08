@@ -117,7 +117,7 @@ Parse.Cloud.define "findRandos", (request, response) ->
   .then (results) =>
     _.map results, 'id'
   .then (friendIds) =>
-    @getRandos userId, friendIds, 0
+    getRandos userId, friendIds, 0
   .then (results) =>
     randos = []
     for rando in results
@@ -141,10 +141,11 @@ getRandos = (userId, friendIds, hasRandoedCount) ->
   userRandosQuery.limit 4
   userRandosQuery.find({ useMasterKey: true })
   .then (results) =>
-    if results?
+    if results.length > 0
+      console.log 'gotRandos: ', results.length
       return results
     else
-      @getRandos userId, friendIds, hasRandoedCount + 1
+      getRandos userId, friendIds, hasRandoedCount + 1
 
 Parse.Cloud.define "addRando", (request, response) ->
   # TODO: rando validation: make sure request.randoId is a valid rando (found via findRandos)
