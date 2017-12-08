@@ -117,14 +117,7 @@ Parse.Cloud.define "findRandos", (request, response) ->
   .then (results) =>
     _.map results, 'id'
   .then (friendIds) =>
-    userRandosQuery = new Parse.Query 'User'
-    userRandosQuery.notContainedIn 'objectId', friendIds
-    userRandosQuery.notEqualTo 'hasRandoed', userId
-    userRandosQuery.lessThanOrEqualTo 'hasRandoedCount', 1
-    userRandosQuery.greaterThanOrEqualTo 'prefCount', 1
-    userRandosQuery.include 'ACL'
-    userRandosQuery.limit 4
-    userRandosQuery.find({ useMasterKey: true })
+    @getRandos userId, friendIds, 0
   .then (results) =>
     randos = []
     for rando in results
@@ -137,6 +130,21 @@ Parse.Cloud.define "findRandos", (request, response) ->
     response.success randos
   .fail (error) =>
     response.error error
+
+getRandos = (userId, friendIds, hasRandoedCount) ->
+  userRandosQuery = new Parse.Query 'User'
+  userRandosQuery.notContainedIn 'objectId', friendIds
+  userRandosQuery.notEqualTo 'hasRandoed', userId
+  userRandosQuery.lessThanOrEqualTo 'hasRandoedCount', hasRandoedCount
+  userRandosQuery.greaterThanOrEqualTo 'prefCount', 1
+  userRandosQuery.include 'ACL'
+  userRandosQuery.limit 4
+  userRandosQuery.find({ useMasterKey: true })
+  .then (results) =>
+    if results?
+      return results
+    else
+      @getRandos userId, friendIds, hasRandoedCount + 1
 
 Parse.Cloud.define "addRando", (request, response) ->
   # TODO: rando validation: make sure request.randoId is a valid rando (found via findRandos)
