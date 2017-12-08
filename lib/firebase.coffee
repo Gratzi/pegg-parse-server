@@ -35,7 +35,7 @@ class PeggFirebase
       timestamp = Date.now()
       log "sending to Inbox: ", friendId, userId, type, timestamp
       inboxChannel = @_firebaseRef.child "inbound/#{friendId}"
-      inboxChannel.push { userId, type, timestamp }
+      inboxChannel.push { userId, friendId, type, timestamp }
 
   saveVerifyCode: ({ phoneNumber, code }) =>
     @_ready.then =>
