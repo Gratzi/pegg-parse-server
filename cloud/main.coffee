@@ -84,6 +84,8 @@ Parse.Cloud.define "confirmRequest", (request, response) ->
     if res?
       createFriendship user.id, friend.id
       .then =>
+        Firebase.sendToInbox type: 'friendsUpdate', userId: user.id, friendId: friend.id
+        Firebase.sendToInbox type: 'friendsUpdate', userId: friend.id, friendId: user.id
         Firebase.sendPush
           title: "#{userName} confirmed your friend request!"
           message: "Start pegging them."
@@ -99,6 +101,8 @@ Parse.Cloud.define "addFriend", (request, response) ->
   userName = request.params.userName
   createFriendship userId, friendId
   .then =>
+    Firebase.sendToInbox type: 'friendsUpdate', userId: userId, friendId: friendId
+    Firebase.sendToInbox type: 'friendsUpdate', userId: friendId, friendId: userId
     Firebase.sendPush
       title: "You and #{userName} are now friends!"
       message: "Start pegging them."
@@ -116,7 +120,7 @@ Parse.Cloud.define "findRandos", (request, response) ->
     userRandosQuery = new Parse.Query 'User'
     userRandosQuery.notContainedIn 'objectId', friendIds
     userRandosQuery.notEqualTo 'hasRandoed', userId
-    userRandosQuery.lessThanOrEqualTo 'hasRandoedCount', 0
+    userRandosQuery.lessThanOrEqualTo 'hasRandoedCount', 1
     userRandosQuery.greaterThanOrEqualTo 'prefCount', 1
     userRandosQuery.include 'ACL'
     userRandosQuery.limit 4
@@ -145,12 +149,16 @@ Parse.Cloud.define "addRando", (request, response) ->
     userQuery.equalTo 'objectId', randoId
     userQuery.first({ useMasterKey: true })
   .then (rando) =>
+    startTime = Date.now()
     rando.increment 'hasRandoedCount'
     if rando.get('hasRandoed') is undefined
       rando.set 'hasRandoed', []
     rando.addUnique 'hasRandoed', userId
+    rando.addUnique 'randoStartTimes', { userId, startTime }
     rando.save(null, { useMasterKey: true })
   .then =>
+    Firebase.sendToInbox type: 'randosUpdate', userId: userId, friendId: randoId
+    Firebase.sendToInbox type: 'randosUpdate', userId: randoId, friendId: userId
     Firebase.sendPush
       title: "A new rando is pegging you!"
       message: "Get your flirt on, sexy."
@@ -375,9 +383,7 @@ createFriendship = (userId, friendId) ->
   Parse.Promise.when(
     addFriendToRole("#{friendId}_Friends", userId)
     addFriendToRole("#{userId}_Friends", friendId)
-  ).then =>
-    Firebase.sendToInbox type: 'friendsUpdate', userId: userId, friendId: friendId
-    Firebase.sendToInbox type: 'friendsUpdate', userId: friendId, friendId: userId
+  )
 
 getFriendRequest = (user, friend) ->
   requestQuery = new Parse.Query 'Request'
