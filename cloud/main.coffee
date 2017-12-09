@@ -109,6 +109,11 @@ Parse.Cloud.define "addFriend", (request, response) ->
       userId: userId
       friendId: friendId
 
+Parse.Cloud.define "removeFriend", (request, response) ->
+  userId = request.user.id
+  friendId = request.params.friendId
+  deleteFriendship userId, friendId
+
 Parse.Cloud.define "findRandos", (request, response) ->
   userId = request.user.id
   token = request.user.getSessionToken()
@@ -162,6 +167,7 @@ Parse.Cloud.define "addRando", (request, response) ->
     if rando.get('hasRandoed') is undefined
       rando.set 'hasRandoed', []
     rando.addUnique 'hasRandoed', userId
+    rando.addUnique 'currentRandos', userId
     rando.addUnique 'randoStartTimes', { userId, startTime }
     rando.save(null, { useMasterKey: true })
   .then =>
@@ -175,6 +181,20 @@ Parse.Cloud.define "addRando", (request, response) ->
     response.success 'Rando Added'
   .fail (error) =>
     response.error error
+
+Parse.Cloud.define "removeRando", (request, response) ->
+  userId = request.user.id
+  randoId = request.params.randoId
+  console.log "Removing Rando #{randoId} for User #{userId}"
+  deleteFriendship userId, randoId
+  .then =>
+    userQuery = new Parse.Query 'User'
+    userQuery.equalTo 'objectId', randoId
+    userQuery.first({ useMasterKey: true })
+  .then (friend) =>
+    startTime = Date.now()
+    friend.remove 'currentRandos', userId
+    friend.save(null, { useMasterKey: true })
 
 Parse.Cloud.define "createCard", (request, response) ->
   # console.log 'CARD: ', JSON.stringify request.params.card
@@ -393,6 +413,12 @@ createFriendship = (userId, friendId) ->
     addFriendToRole("#{userId}_Friends", friendId)
   )
 
+deleteFriendship = (userId, friendId) ->
+  Parse.Promise.when(
+    removeFriendFromRole("#{friendId}_Friends", userId)
+    removeFriendFromRole("#{userId}_Friends", friendId)
+  )
+
 getFriendRequest = (user, friend) ->
   requestQuery = new Parse.Query 'Request'
   requestQuery.equalTo 'friend', friend
@@ -502,6 +528,32 @@ addFriendToRole = (roleName, friendId) ->
       query.first({ useMasterKey: true })
       .then (friend) =>
         relation.add friend
+        role.save(null, { useMasterKey: true })
+      .then =>
+        promise.resolve()
+      .fail (error) =>
+        console.error "75", error
+        promise.reject error
+    else
+      promise.reject "role missing: #{roleName}"
+  .fail (error) =>
+    console.error "79", error
+    promise.reject error
+  promise
+
+removeFriendFromRole = (roleName, friendId) ->
+  promise = new Parse.Promise()
+  query = new Parse.Query Parse.Role
+  query.equalTo "name", roleName
+  query.first({ useMasterKey: true })
+  .then (role) =>
+    if role?
+      relation = role.getUsers()
+      query = new Parse.Query Parse.User
+      query.equalTo "objectId", friendId
+      query.first({ useMasterKey: true })
+      .then (friend) =>
+        relation.remove friend
         role.save(null, { useMasterKey: true })
       .then =>
         promise.resolve()
