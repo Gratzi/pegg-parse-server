@@ -149,6 +149,8 @@ getRandos = (userId, friendIds, hasRandoedCount) ->
     if results.length > 0
       console.log 'gotRandos: ', results.length
       return results
+    else if hasRandoedCount > 5
+      return []
     else
       getRandos userId, friendIds, hasRandoedCount + 1
 
