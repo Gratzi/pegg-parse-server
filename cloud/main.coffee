@@ -198,6 +198,10 @@ Parse.Cloud.define "removeRando", (request, response) ->
     startTime = Date.now()
     friend.remove 'currentRandos', userId
     friend.save(null, { useMasterKey: true })
+  .then =>
+    response.success 'Rando Removed'
+  .fail (error) =>
+    response.error error
 
 Parse.Cloud.define "createCard", (request, response) ->
   # console.log 'CARD: ', JSON.stringify request.params.card
