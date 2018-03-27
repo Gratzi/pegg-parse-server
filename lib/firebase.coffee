@@ -6,9 +6,14 @@ Slack = require './slack'
 
 Promise = require('parse').Promise
 Firebase = require 'firebase'
-FirebaseTokenGenerator = require 'firebase-token-generator'
+admin = require 'firebase-admin'
 FIREBASE_SECRET = process.env.FIREBASE_SECRET or Slack.serverError "cannot have an empty FIREBASE_SECRET"
 FIREBASE_DATABASE_URL = process.env.FIREBASE_DATABASE_URL or Slack.serverError "cannot have an empty FIREBASE_DATABASE_URL"
+FIREBASE_SERVICE_ACCOUNT = process.env.FIREBASE_SERVICE_ACCOUNT or Slack.serverError "cannot have an empty FIREBASE_SERVICE_ACCOUNT"
+admin.initializeApp({
+  credential: admin.credential.cert(JSON.parse FIREBASE_SERVICE_ACCOUNT),
+  databaseURL: FIREBASE_DATABASE_URL
+})
 
 class PeggFirebase
 
@@ -79,8 +84,16 @@ class PeggFirebase
       pushChannel.push pushMessage
 
   getToken: ({ userId }) =>
-    tokenGenerator = new FirebaseTokenGenerator FIREBASE_SECRET
-    tokenGenerator.createToken {uid: userId}, {expires: 2272147200}
+    # tokenGenerator = new FirebaseTokenGenerator FIREBASE_SECRET
+    # tokenGenerator.createToken {uid: userId}, {expires: 2272147200}
+    promise = new Promise
+    admin.auth().createCustomToken(userId).then((customToken) ->
+      # Send token back to client
+      promise.resolve customToken
+    ).catch (error) ->
+      log.error 'Error creating custom token:', error
+      promise.reject error
+    return promise
 
   getRef: =>
     @_ready.then =>

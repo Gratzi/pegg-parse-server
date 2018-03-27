@@ -11,7 +11,11 @@ log = debug 'pegg:worker:log'
 ######### CLOUD FUNCTIONS #########
 
 Parse.Cloud.define "getFirebaseToken", (request, response) ->
-  response.success Firebase.getToken userId: request.user.id
+  Firebase.getToken userId: request.user.id
+  .then (token) =>
+    response.success token
+  .fail (err) =>
+    response.error err
 
 Parse.Cloud.define "updateEmail", (request, response) ->
   email = request.params.newEmail
