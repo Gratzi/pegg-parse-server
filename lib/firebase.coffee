@@ -65,23 +65,11 @@ class PeggFirebase
           promise.reject()
       promise
 
-  sendPush: ({ title, message, userId, friendId, type }) =>
+  sendPush: (payload) =>
     @_ready.then =>
       timestamp = Date.now()
-      pushMessage =
-        title: title
-        message: message
-        data:
-          userId: userId
-          friendId: friendId
-          title: title
-          message: message
-          timestamp: timestamp
-          style: "inbox"
-          type: type
-          summaryText: "%n% new messages"
-      pushChannel = @_firebaseRef.child('push').child('tasks')
-      pushChannel.push pushMessage
+      pushChannel = @_firebaseRef.child('push')
+      pushChannel.push payload
 
   getToken: ({ userId }) =>
     # tokenGenerator = new FirebaseTokenGenerator FIREBASE_SECRET

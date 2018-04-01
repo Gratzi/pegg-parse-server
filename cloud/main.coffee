@@ -129,7 +129,7 @@ Parse.Cloud.define "createCard", (request, response) ->
 Parse.Cloud.define "sendVerifyCode", (request, response) ->
   phoneNumber = request.params.phoneNumber
   if phoneNumber?
-    code = Math.floor(Math.random() * 900000) + 100000 # hash of phone and random 6 digit code
+    code = Math.floor(Math.random() * 90000) + 10000 # random 6 digit code
     Firebase.saveVerifyCode { phoneNumber, code }
     .then =>
       twilio.sendSMS phoneNumber, "Pegg Code: #{code}. Get your pegg on!"
