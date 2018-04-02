@@ -112,6 +112,9 @@ Parse.Cloud.define "addFriend", (request, response) ->
       message: "Start pegging them."
       userId: userId
       friendId: friendId
+    response.success()
+  .fail (err) =>
+    response.error err
 
 Parse.Cloud.define "removeFriend", (request, response) ->
   userId = request.user.id
