@@ -455,8 +455,6 @@ addFriendToRole = (roleName, friendId) ->
         if friend?
           relation.add friend
           role.save(null, { useMasterKey: true })
-        else
-          promise.reject 'friendId not found.'
       .then =>
         promise.resolve()
       .fail (error) =>
