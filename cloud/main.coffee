@@ -190,6 +190,70 @@ Parse.Cloud.define "checkVerifyCode", (request, response) ->
   else
     response.error 'must submit a phoneNumber and Code'
 
+Parse.Cloud.define "getProfileCards", (request, response) ->
+  peggs = {}
+  peggQuery = new Parse.Query 'Pegg'
+  peggQuery.include 'user'
+  peggQuery.include 'card'
+  peggQuery.include 'pref'
+  peggQuery.equalTo 'peggee', request.user
+  peggQuery.descending 'updatedAt'
+  peggQuery.distinct 'pref'
+  peggQuery.find { useMasterKey: true }
+  .then (peggRows) =>
+    # console.log JSON.stringify peggRows
+    cards = []
+    for pegg in peggRows
+      card = pegg.get('card')
+      cards.push card
+      peggs[card.id] = _sanitizeCard card
+      peggs[card.id].pref = _sanitizePref pegg.get('pref')
+      peggs[card.id].pegg = _sanitizePegg pegg
+    cardQuery = new Parse.Query 'Choice'
+    cardQuery.notEqualTo 'disabled', true
+    cardQuery.containedIn 'card', cards
+    cardQuery.include 'card'
+    cardQuery.descending 'updatedAt'
+    cardQuery.find()
+    .then (choiceRows) =>
+      for choice in choiceRows
+        # console.log JSON.stringify choice
+        card = choice.get 'card'
+        peggs[card.id].choices[choice.id] = _sanitizeChoice choice
+      response.success peggs
+
+_sanitizePegg = (pegg) =>
+  userId: pegg.get('user').id
+  createdAt: pegg.createdAt
+
+_sanitizePref = (pref) =>
+  id: pref.id
+  answer: pref.get 'answer'
+  choices: pref.get 'choices'
+  cardId: pref.get('card')?.id
+  question: pref.get 'question'
+  hasPegged: pref.get('hasPegged') or []
+  createdAt: pref.createdAt
+
+_sanitizeCard = (card) =>
+  id: card.id
+  question: card.get 'question'
+  choices: card.get 'choices'
+  authorId: card.get('createdBy')?.id
+  flags: card.get('flags') or 0
+  hasPreffed: card.get('hasPreffed') or []
+  createdAt: card.createdAt
+  failCount: 0
+  deck: card.get 'deck'
+  choices: {}
+
+_sanitizeChoice = (choice) =>
+  id: choice.id
+  cardId: choice.get('card')?.id
+  text: choice.get('text')
+  image: choice.get('image')
+  prefCount: choice.get('prefCount') or 0
+  num: choice.get('num')
 
 ###########################################
 ######### AFTER SAVE, DELETE, ETC #########
