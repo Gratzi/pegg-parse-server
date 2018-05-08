@@ -287,8 +287,9 @@ Parse.Cloud.afterSave 'Pref', (request) ->
   if !pref.existed() # if new object
     updateCardHasPreffed user, card # updates hasPreffed on Card
     incrementChoiceCount answer.id, 'prefCount' # what's the most popular preference?
-    if author?
-      incrementStars author.id
+    # not using stars currently... also this wasnt working.
+    # if author?
+    #   incrementStars author.id
 
 Parse.Cloud.afterSave 'UserPrivates', (request) ->
 # can't use afterSave Parse.User because on new user creation two saves happen, the first without any user details
@@ -464,6 +465,7 @@ updateBestieScore = (user, peggee, failCount, deck) ->
       bestie.set 'peggCounts', peggCounts
       bestie.set 'lastDeck', deck
       bestie.increment 'failCount', failCount
+      if failCount is 0 then bestie.increment 'aceCount'
       bestie.increment 'peggCount'
       score = Math.round(( 1 - bestie.get('failCount') / (bestie.get('peggCount') + bestie.get('failCount'))) * 100)
       bestie.set 'score', score
@@ -477,6 +479,10 @@ updateBestieScore = (user, peggee, failCount, deck) ->
       newBestieAcl.setReadAccess user.id, true
       newBestie = new Parse.Object 'Bestie'
       newBestie.set 'failCount', failCount
+      if failCount is 0
+        bestie.set 'aceCount', 1
+      else 
+        bestie.set 'aceCount', 0     
       newBestie.set 'peggCount', 1
       newBestie.set 'friend', peggee
       newBestie.set 'user', user
