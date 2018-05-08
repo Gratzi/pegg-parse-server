@@ -209,12 +209,11 @@ Parse.Cloud.define "getProfileCards", (request, response) ->
       peggs[card.id] = _sanitizeCard card
       peggs[card.id].pref = _sanitizePref pegg.get('pref')
       peggs[card.id].pegg = _sanitizePegg pegg
-    cardQuery = new Parse.Query 'Choice'
-    cardQuery.notEqualTo 'disabled', true
-    cardQuery.containedIn 'card', cards
-    cardQuery.include 'card'
-    cardQuery.descending 'updatedAt'
-    cardQuery.find()
+    choiceQuery = new Parse.Query 'Choice'
+    choiceQuery.containedIn 'card', cards
+    choiceQuery.include 'card'
+    choiceQuery.descending 'updatedAt'
+    choiceQuery.find { useMasterKey: true }
     .then (choiceRows) =>
       for choice in choiceRows
         # console.log JSON.stringify choice
