@@ -479,9 +479,9 @@ updateBestieScore = (user, peggee, failCount, deck) ->
       newBestie = new Parse.Object 'Bestie'
       newBestie.set 'failCount', failCount
       if failCount is 0
-        bestie.set 'aceCount', 1
+        newBestie.set 'aceCount', 1
       else 
-        bestie.set 'aceCount', 0     
+        newBestie.set 'aceCount', 0     
       newBestie.set 'peggCount', 1
       newBestie.set 'friend', peggee
       newBestie.set 'user', user
